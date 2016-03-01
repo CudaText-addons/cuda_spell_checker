@@ -1,0 +1,10 @@
+[info]
+title=TestSpellCheck
+desc=Spell checker, underlines wrong words
+type=cudatext-plugin
+subdir=cuda_spell
+
+[item1]
+section=commands
+caption=Spell Check\Underline
+method=run
