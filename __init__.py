@@ -1,4 +1,5 @@
 from cudatext import *
+from bisect import bisect_left
 import string
 import os
 
@@ -12,8 +13,8 @@ dict_words = []
 def do_read_dict():
     global dict_words
     text = open(dict_filename, encoding='cp1251').read().splitlines()
-    dict_words = [s.split('/')[0].lower() for s in text]
-    #for i in range(10): print('word', words[i])
+    dict_words = sorted([s.split('/')[0].lower() for s in text])
+    #print('dict:', dict_words[:5])
 
 def is_word_char(s):
     chars = string.ascii_letters+string.digits+"'_"
@@ -25,8 +26,16 @@ def is_word_alpha(s):
     if s[0] in "'_": return False
     return True    
 
+def is_word_in_list(x, a):
+    hi = len(a)
+    pos = bisect_left(a, x, 0, hi)
+    res = (pos != hi) and (a[pos] == x)
+    #print('word', x, 'res:', res)
+    return res
+
 
 def do_hilite():
+    global dict_words
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
     COLOR_BACK = ed.get_prop(PROP_COLOR, 'EdTextBg')
@@ -48,7 +57,7 @@ def do_hilite():
             sub = s[n1:n2]
             n1 = n2
             if not is_word_alpha(sub): continue
-            if sub.lower() in dict_words: continue
+            if is_word_in_list(sub.lower(), dict_words): continue
             
             ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),   
               COLOR_FORE, COLOR_BACK, COLOR_UNDER, 
