@@ -32,24 +32,32 @@ def dlg_spell(sub):
     if not rep_list: return
     
     c1 = chr(1)
-    id_list = 1
-    id_replace = 2
-    id_skip = 3
-    id_cancel = 4
+    id_edit = 3
+    id_list = 5
+    id_replace = 6
+    id_skip = 7
+    id_cancel = 8
     res = dlg_custom('Replace word?', 426, 306, '\n'.join([]
-        +[c1.join(['type=label', 'pos=6,6,450,0', 'cap=Replace "%s":'%sub])]
-        +[c1.join(['type=listbox', 'pos=6,26,300,300', 'items='+'\t'.join(rep_list), 'val=0'])]
-        +[c1.join(['type=button', 'pos=306,26,420,0', 'cap=&Replace', 'props=1'])]
-        +[c1.join(['type=button', 'pos=306,56,420,0', 'cap=&Skip'])]
-        +[c1.join(['type=button', 'pos=306,106,420,0', 'cap=Cancel'])]
+        +[c1.join(['type=label', 'pos=6,6,100,0', 'cap=Not found:'])]
+        +[c1.join(['type=label', 'pos=106,6,400,0', 'cap='+sub])]
+        +[c1.join(['type=label', 'pos=6,26,100,0', 'cap=&Custom replace:'])]
+        +[c1.join(['type=edit', 'pos=106,26,300,0', 'val='])]
+        +[c1.join(['type=label', 'pos=6,56,100,0', 'cap=Su&ggestions:'])]
+        +[c1.join(['type=listbox', 'pos=106,56,300,300', 'items='+'\t'.join(rep_list), 'val=0'])]
+        +[c1.join(['type=button', 'pos=306,56,420,0', 'cap=&Replace', 'props=1'])]
+        +[c1.join(['type=button', 'pos=306,86,420,0', 'cap=&Skip'])]
+        +[c1.join(['type=button', 'pos=306,136,420,0', 'cap=Cancel'])]
         ))
     if res is None: return
     res, text = res
     text = text.splitlines()
-    if res==id_replace: return rep_list[int(text[id_list])]
+    if res==id_replace:
+        word = text[id_edit]
+        if word: return word 
+        return rep_list[int(text[id_list])]
     if res==id_skip: return ''
         
-#print(dlg_spell('Test'))        
+#print(dlg_spell('tst'))        
 
 
 def do_hilite(with_dialog=False):
