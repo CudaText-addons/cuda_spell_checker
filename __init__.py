@@ -53,5 +53,20 @@ def do_hilite():
               0, 0, 0, 0, 0, BORDER_UNDER)
 
 class Command:
+    active = False
+
     def hilite(self):
         do_hilite()
+
+    def on_change_slow(self, ed_self):
+        do_hilite()
+
+    def toggle_hilite(self):
+        self.active = not self.active
+        if self.active:
+            ev = 'on_change_slow'
+            do_hilite() 
+        else:
+            ev = ''
+            ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
+        app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')

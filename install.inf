@@ -6,5 +6,11 @@ subdir=cuda_spell_checker
 
 [item1]
 section=commands
+caption=Spell Checker\Toggle underlines on/off
+method=toggle_hilite
+
+[item2]
+section=commands
 caption=Spell Checker\Show underlines
 method=hilite
+
