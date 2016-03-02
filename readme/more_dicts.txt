@@ -3,5 +3,5 @@ https://github.com/titoBouzout/Dictionaries
 
 rename to short names: Russian.* to ru.* or ru_RU.*
 copy into folder: 
-- on Linux/OSX: .enchant/myspell/
-- on Windows: [plugin dir]\enchant\share\enchant\myspell\
+- on Linux/OSX: ~/.enchant/myspell/
+- on Windows: [plugin_dir]\enchant\share\enchant\myspell\
