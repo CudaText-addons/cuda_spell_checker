@@ -183,6 +183,9 @@ class Command:
             ev = ''
             ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
         app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')
+        
+        text = 'Underlines on' if self.active else 'Underlines off'
+        msg_status(text) 
 
     def select_dict(self):
         res = dlg_select_dict()
