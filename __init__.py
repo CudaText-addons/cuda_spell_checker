@@ -192,3 +192,6 @@ class Command:
         op_lang = res
         ini_write(filename_ini, 'op', 'dict', op_lang)
         dict_obj = enchant.Dict(op_lang)
+        if self.active:
+            do_hilite()
+            
