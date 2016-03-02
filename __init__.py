@@ -43,7 +43,7 @@ def dlg_spell(sub):
     res = dlg_custom('Replace word?', 426, 306, '\n'.join([]
         +[c1.join(['type=label', 'pos=6,6,100,0', 'cap=Not found:'])]
         +[c1.join(['type=label', 'pos=106,6,400,0', 'cap='+sub])]
-        +[c1.join(['type=label', 'pos=6,26,100,0', 'cap=&Custom replace:'])]
+        +[c1.join(['type=label', 'pos=6,26,100,0', 'cap=&Custom text:'])]
         +[c1.join(['type=edit', 'pos=106,26,300,0', 'val='])]
         +[c1.join(['type=label', 'pos=6,56,100,0', 'cap=Su&ggestions:'])]
         +[c1.join(['type=listbox', 'pos=106,56,300,300', 'items='+'\t'.join(rep_list), 'val=0'])]
