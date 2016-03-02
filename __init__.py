@@ -1,8 +1,8 @@
 import os
 import sys
 import string
+import json
 from cudatext import *
-from bisect import bisect_left
 
 sys.path.append(os.path.dirname(__file__))
 try:
@@ -60,10 +60,35 @@ def dlg_spell(sub):
 #print(dlg_spell('tst'))        
 
 
+def get_styles_from_file(fn, lexer):
+    if not os.path.isfile(fn): return
+    j = json.loads(open(fn).read())
+    return j.get('StringStyles', {}).get(lexer, []) \
+         + j.get('CommentStyles', {}).get(lexer, [])
+
+
+def get_styles_of_editor():
+    lexer = ed.get_prop(PROP_LEXER_FILE)
+    if not lexer: return
+    fn_user = os.path.join(app_path(APP_DIR_SETTINGS), 'user_lexers.json')
+    fn_def = os.path.join(app_path(APP_DIR_EXE), 'settings_default', 'default_lexers.json')
+    s1 = get_styles_from_file(fn_user, lexer)
+    s2 = get_styles_from_file(fn_def, lexer)
+    res = []
+    if s1: res+=s1
+    if s2: res+=s2
+    return res
+    
+#print(get_styles_of_editor()) #debug
+
+
 def do_hilite(with_dialog=False):
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
     COLOR_BACK = ed.get_prop(PROP_COLOR, 'EdTextBg')
+    styles = get_styles_of_editor()
+    count_all = 0
+    count_replace = 0
     
     for nline in range(ed.get_line_count()):
         line = ed.get_text_line(nline)
@@ -81,14 +106,22 @@ def do_hilite(with_dialog=False):
             
             sub = line[n1:n2]
             n1 = n2
+            
+            token = ed.get_token(TOKEN_AT_POS, text_x, text_y)
+            if token:
+                ((start_x, start_y), (end_x, end_y), str_token, str_style) = token
+                if not str_style in styles: continue
+            
             if not is_word_alpha(sub): continue
             if dict_obj.check(sub): continue
-            
+
+            count_all += 1            
             if with_dialog:
                 ed.set_caret(text_x, text_y, text_x+len(sub), text_y)
                 rep = dlg_spell(sub)
                 if rep is None: return
                 if rep=='': continue
+                count_replace += 1
                 ed.delete(text_x, text_y, text_x+len(sub), text_y)
                 ed.insert(text_x, text_y, rep)
                 #replace
@@ -99,7 +132,7 @@ def do_hilite(with_dialog=False):
                   COLOR_FORE, COLOR_BACK, COLOR_UNDER, 
                   0, 0, 0, 0, 0, BORDER_UNDER)
     
-    msg_status('Spell-checking done')
+    msg_status('Spell-checking done, %d mistakes, %d replaced' % (count_all, count_replace))
 
 class Command:
     active = False
