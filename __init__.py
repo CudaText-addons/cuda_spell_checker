@@ -1,3 +1,4 @@
+# coding: utf8
 import os
 import sys
 import string
@@ -14,8 +15,8 @@ sys.path.append(os.path.dirname(__file__))
 try:
     import enchant
     dict_obj = enchant.Dict(option_dict)
-except:
-    msg_box('Cannot import Enchant spell-checker library.\nSeems cannot find binary Enchant files.', MB_OK+MB_ICONERROR)
+except Exception as ex:
+    msg_box(str(ex), MB_OK+MB_ICONERROR)
 
 
 COLOR_UNDER = 0xFF #red underline
@@ -25,7 +26,10 @@ MARKTAG = 105 #uniq int for all marker plugins
 
 
 def is_word_char(s):
-    chars = string.ascii_letters+string.digits+"'_"
+    chars = string.ascii_letters+string.digits+ \
+      "'_"+ \
+      'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'+ \
+      'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
     return s in chars
     
 def is_word_alpha(s):
@@ -68,9 +72,12 @@ def dlg_spell(sub):
 
 
 def dlg_select_dict():
-    items = enchant._broker.list_languages()
+    items = sorted(enchant._broker.list_languages())
     global option_dict
-    focused = items.index(option_dict)
+    if option_dict in items:
+        focused = items.index(option_dict)
+    else:
+        focused = -1    
     res = dlg_menu(MENU_LIST, '\n'.join(items), focused)
     if res is None: return
     return items[res]
