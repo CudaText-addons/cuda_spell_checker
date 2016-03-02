@@ -3,15 +3,19 @@ import sys
 import string
 from cudatext import *
 from bisect import bisect_left
+
 sys.path.append(os.path.dirname(__file__))
-import enchant
+try:
+    import enchant
+    dict_obj = enchant.Dict('en_US')
+except:
+    msg_box('Cannot import Enchant spell-checker library.\nSeems cannot find binary Enchant files.', MB_OK+MB_ICONERROR)
 
 
 COLOR_UNDER = 0xFF #red underline
 BORDER_UNDER = 6 #wave underline
 MARKTAG = 105 #uniq int for all marker plugins
 
-dict_obj = enchant.Dict('en_US')
 
 def is_word_char(s):
     chars = string.ascii_letters+string.digits+"'_"
