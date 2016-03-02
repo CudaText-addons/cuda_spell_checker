@@ -2,7 +2,10 @@ import os
 import sys
 import string
 import json
+from .jsoncomment import JsonComment
 from cudatext import *
+
+json_parser = JsonComment(json)
 
 sys.path.append(os.path.dirname(__file__))
 try:
@@ -62,7 +65,7 @@ def dlg_spell(sub):
 
 def get_styles_from_file(fn, lexer):
     if not os.path.isfile(fn): return
-    j = json.loads(open(fn).read())
+    j = json_parser.loads(open(fn).read())
     return j.get('StringStyles', {}).get(lexer, []) \
          + j.get('CommentStyles', {}).get(lexer, [])
 
@@ -144,6 +147,9 @@ class Command:
         do_hilite(True)
 
     def on_change_slow(self, ed_self):
+        do_hilite()
+
+    def on_open(self, ed_self):
         do_hilite()
 
     def toggle_hilite(self):
