@@ -9,12 +9,12 @@ from cudatext import *
 json_parser = JsonComment(json)
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
-option_dict = ini_read(filename_ini, 'op', 'dict', 'en_US')
+op_lang = ini_read(filename_ini, 'op', 'dict', 'en_US')
 
 sys.path.append(os.path.dirname(__file__))
 try:
     import enchant
-    dict_obj = enchant.Dict(option_dict)
+    dict_obj = enchant.Dict(op_lang)
 except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
 
@@ -73,10 +73,10 @@ def dlg_spell(sub):
 
 
 def dlg_select_dict():
-    items = sorted(enchant._broker.list_languages())
-    global option_dict
-    if option_dict in items:
-        focused = items.index(option_dict)
+    items = sorted(enchant.list_languages())
+    global op_lang
+    if op_lang in items:
+        focused = items.index(op_lang)
     else:
         focused = -1    
     res = dlg_menu(MENU_LIST, '\n'.join(items), focused)
@@ -156,8 +156,8 @@ def do_hilite(with_dialog=False):
                   COLOR_FORE, COLOR_BACK, COLOR_UNDER, 
                   0, 0, 0, 0, 0, BORDER_UNDER)
     
-    global option_dict
-    msg_status('Spell-check: %s, %d mistakes, %d replaces' % (option_dict, count_all, count_replace))
+    global op_lang
+    msg_status('Spell-check: %s, %d mistakes, %d replaces' % (op_lang, count_all, count_replace))
 
 class Command:
     active = False
@@ -187,8 +187,8 @@ class Command:
     def select_dict(self):
         res = dlg_select_dict()
         if res is None: return
-        global option_dict
+        global op_lang
         global dict_obj
-        option_dict = res
-        ini_write(filename_ini, 'op', 'dict', option_dict)
-        dict_obj = enchant.Dict(option_dict)
+        op_lang = res
+        ini_write(filename_ini, 'op', 'dict', op_lang)
+        dict_obj = enchant.Dict(op_lang)

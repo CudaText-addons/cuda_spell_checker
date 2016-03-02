@@ -16,11 +16,5 @@ method=check
 
 [item3]
 section=commands
-caption=Spell Checker\Select dictionary
+caption=Spell Checker\Select language
 method=select_dict
-
-[__item3]
-section=commands
-caption=Spell Checker\Show underlines
-method=hilite
-
