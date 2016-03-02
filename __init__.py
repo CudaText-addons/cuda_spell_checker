@@ -71,7 +71,7 @@ def get_styles_of_editor():
     lexer = ed.get_prop(PROP_LEXER_FILE)
     if not lexer: return
     fn_user = os.path.join(app_path(APP_DIR_SETTINGS), 'user_lexers.json')
-    fn_def = os.path.join(app_path(APP_DIR_EXE), 'settings_default', 'default_lexers.json')
+    fn_def = os.path.join(os.path.dirname(app_path(APP_DIR_SETTINGS)), 'settings_default', 'default_lexers.json')
     s1 = get_styles_from_file(fn_user, lexer)
     s2 = get_styles_from_file(fn_def, lexer)
     res = []
