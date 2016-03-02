@@ -26,10 +26,11 @@ MARKTAG = 105 #uniq int for all marker plugins
 
 
 def is_word_char(s):
-    chars = string.ascii_letters+string.digits+ \
-      "'_"+ \
+    chars = string.ascii_letters+ \
+      string.digits+ "'_"+ \
       'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'+ \
-      'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
+      'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'+ \
+      'ÄäÉéÖöÜüß'
     return s in chars
     
 def is_word_alpha(s):
