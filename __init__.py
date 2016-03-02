@@ -7,10 +7,13 @@ from cudatext import *
 
 json_parser = JsonComment(json)
 
+filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
+option_dict = ini_read(filename_ini, 'op', 'dict', 'en_US')
+
 sys.path.append(os.path.dirname(__file__))
 try:
     import enchant
-    dict_obj = enchant.Dict('en_US')
+    dict_obj = enchant.Dict(option_dict)
 except:
     msg_box('Cannot import Enchant spell-checker library.\nSeems cannot find binary Enchant files.', MB_OK+MB_ICONERROR)
 
@@ -18,6 +21,7 @@ except:
 COLOR_UNDER = 0xFF #red underline
 BORDER_UNDER = 6 #wave underline
 MARKTAG = 105 #uniq int for all marker plugins
+
 
 
 def is_word_char(s):
@@ -62,6 +66,15 @@ def dlg_spell(sub):
         
 #print(dlg_spell('tst'))        
 
+
+def dlg_select_dict():
+    items = enchant._broker.list_languages()
+    global option_dict
+    focused = items.index(option_dict)
+    res = dlg_menu(MENU_LIST, '\n'.join(items), focused)
+    if res is None: return
+    return items[res]
+    
 
 def get_styles_from_file(fn, lexer):
     if not os.path.isfile(fn): return
@@ -135,7 +148,8 @@ def do_hilite(with_dialog=False):
                   COLOR_FORE, COLOR_BACK, COLOR_UNDER, 
                   0, 0, 0, 0, 0, BORDER_UNDER)
     
-    msg_status('Spell-checking done, %d mistakes, %d replaced' % (count_all, count_replace))
+    global option_dict
+    msg_status('Spell-check: %s, %d mistakes, %d replaces' % (option_dict, count_all, count_replace))
 
 class Command:
     active = False
@@ -161,3 +175,12 @@ class Command:
             ev = ''
             ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
         app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')
+
+    def select_dict(self):
+        res = dlg_select_dict()
+        if res is None: return
+        global option_dict
+        global dict_obj
+        option_dict = res
+        ini_write(filename_ini, 'op', 'dict', option_dict)
+        dict_obj = enchant.Dict(option_dict)
