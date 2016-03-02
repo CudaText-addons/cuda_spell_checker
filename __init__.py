@@ -29,7 +29,7 @@ def is_word_alpha(s):
 
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
-    if not rep_list: return
+    if not rep_list: rep_list=['?']
     
     c1 = chr(1)
     id_edit = 3
