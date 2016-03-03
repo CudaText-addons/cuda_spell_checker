@@ -127,8 +127,19 @@ def do_hilite(with_dialog=False):
     styles = get_styles_of_editor()
     count_all = 0
     count_replace = 0
+    total_lines = ed.get_line_count()
+    percent = 0
+    app_proc(PROC_SET_ESCAPE, '0')
     
-    for nline in range(ed.get_line_count()):
+    for nline in range(total_lines):
+        percent_new = nline * 100 // total_lines
+        if percent_new!=percent:
+            percent = percent_new
+            msg_status('Spell-checking %d%%'% percent)
+            if app_proc(PROC_GET_ESCAPE, ''):
+                msg_status('Spell-check stopped')
+                return
+            
         line = ed.get_text_line(nline)
         n1 = -1
         n2 = -1

@@ -1,6 +1,7 @@
 
-1.0.3
+1.0.4
 + btn "Add" in dialog
++ progress on checking big file, can stop (esc)
 
 1.0.2
 + support Rus/Ger chars
