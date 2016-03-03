@@ -27,17 +27,15 @@ MARKTAG = 105 #uniq int for all marker plugins
 
 
 def is_word_char(s):
-    chars = string.ascii_letters+ \
-      string.digits+ "'_"+ \
-      'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'+ \
-      'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'+ \
-      'ÄäÉéÖöÜüß'
-    return s in chars
+    return s.isalpha() 
     
 def is_word_alpha(s):
+    #don't allow digit in word
+    #don't allow lead-quote
+    digits = string.digits+'_'
     for ch in s:
-        if ch in string.digits+'_': return False
-    if s[0] in "'_": return False
+        if ch in digits: return False
+    if s[0] in "'": return False
     return True    
 
 def string_to_color(s):
