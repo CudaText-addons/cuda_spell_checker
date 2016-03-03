@@ -1,4 +1,7 @@
 
+1.0.3
++ btn "Add" in dialog
+
 1.0.2
 + support Rus/Ger chars
 + support other dict files

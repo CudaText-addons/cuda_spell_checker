@@ -41,34 +41,48 @@ def is_word_alpha(s):
 
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
-    if not rep_list: rep_list=['?']
+    en_list = bool(rep_list)
+    if not en_list: rep_list=[]
     
     c1 = chr(1)
     id_edit = 3
     id_list = 5
-    id_replace = 6
-    id_skip = 7
-    id_cancel = 8
-    res = dlg_custom('Replace word?', 426, 306, '\n'.join([]
-        +[c1.join(['type=label', 'pos=6,6,100,0', 'cap=Not found:'])]
-        +[c1.join(['type=label', 'pos=106,6,400,0', 'cap='+sub])]
-        +[c1.join(['type=label', 'pos=6,26,100,0', 'cap=&Custom text:'])]
-        +[c1.join(['type=edit', 'pos=106,26,300,0', 'val='])]
-        +[c1.join(['type=label', 'pos=6,56,100,0', 'cap=Su&ggestions:'])]
-        +[c1.join(['type=listbox', 'pos=106,56,300,300', 'items='+'\t'.join(rep_list), 'val=0'])]
-        +[c1.join(['type=button', 'pos=306,56,420,0', 'cap=&Replace', 'props=1'])]
-        +[c1.join(['type=button', 'pos=306,86,420,0', 'cap=&Skip'])]
-        +[c1.join(['type=button', 'pos=306,136,420,0', 'cap=Cancel'])]
-        ))
+    id_skip = 6
+    id_replace = 7
+    id_add = 8
+    id_cancel = 9
+    res = dlg_custom('Misspelled word', 426, 306, '\n'.join([]
+        +[c1.join(['type=label', 'pos=6,8,100,0', 'cap=Not found:'])]
+        +[c1.join(['type=edit', 'pos=106,6,300,0', 'cap='+sub, 'props=1,0,1'])]
+        +[c1.join(['type=label', 'pos=6,38,100,0', 'cap=C&ustom text:'])]
+        +[c1.join(['type=edit', 'pos=106,36,300,0', 'val='])]
+        +[c1.join(['type=label', 'pos=6,68,100,0', 'cap=Su&ggestions:'])]
+        +[c1.join(['type=listbox', 'pos=106,66,300,300', 'items='+'\t'.join(rep_list), 'val='+('0' if en_list else '-1')])]
+        +[c1.join(['type=button', 'pos=306,66,420,0', 'cap=&Ignore', 'props=1'])]
+        +[c1.join(['type=button', 'pos=306,96,420,0', 'cap=&Change'])]
+        +[c1.join(['type=button', 'pos=306,126,420,0', 'cap=&Add'])]
+        +[c1.join(['type=button', 'pos=306,186,420,0', 'cap=Cancel'])]
+        ), 3)
     if res is None: return
     res, text = res
     text = text.splitlines()
+    
+    if res==id_skip:
+        return ''
+        
+    if res==id_add:
+        dict_obj.add_to_pwl(sub)
+        return ''
+        
     if res==id_replace:
         word = text[id_edit]
-        if word: return word 
-        return rep_list[int(text[id_list])]
-    if res==id_skip: return ''
-        
+        if word:
+            return word
+        if en_list: 
+            return rep_list[int(text[id_list])]
+        else:
+            return ''
+            
 #print(dlg_spell('tst'))        
 
 
