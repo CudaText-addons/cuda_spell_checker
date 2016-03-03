@@ -9,7 +9,10 @@ from cudatext import *
 json_parser = JsonComment(json)
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
-op_lang = ini_read(filename_ini, 'op', 'dict', 'en_US')
+op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
+op_underline_color = ini_read(filename_ini, 'op', 'underline_color', '#FF0000')
+op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
+op_confirm_esc = ini_read(filename_ini, 'op', 'confirm_esc_key', '0')
 
 sys.path.append(os.path.dirname(__file__))
 try:
@@ -19,10 +22,7 @@ except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
 
 
-COLOR_UNDER = 0xFF #red underline
-BORDER_UNDER = 6 #wave underline
 MARKTAG = 105 #uniq int for all marker plugins
-
 
 
 def is_word_char(s):
@@ -38,6 +38,21 @@ def is_word_alpha(s):
         if ch in string.digits+'_': return False
     if s[0] in "'_": return False
     return True    
+
+def string_to_color(s):
+    """ converts #RRGGBB or #RGB to integers"""
+    s = s.strip()
+    while s[0] == '#': s = s[1:]
+    # get bytes in reverse order to deal with PIL quirk
+    if len(s)==3:
+        s = s[0]*2 + s[1]*2 + s[2]*2
+    if len(s)!=6:
+        raise Exception('Incorrect color token: '+s)
+    s = s[-2:] + s[2:4] + s[:2]
+    # finally, make it numeric
+    color = int(s, 16)
+    return color
+
 
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
@@ -120,10 +135,16 @@ def get_styles_of_editor():
 #print(get_styles_of_editor()) #debug
 
 
-def do_hilite(with_dialog=False):
-    ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
+def do_work(with_dialog=False):
+    global op_underline_color
+    global op_underline_style
+    global op_confirm_esc
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
     COLOR_BACK = ed.get_prop(PROP_COLOR, 'EdTextBg')
+    COLOR_UNDER = string_to_color(op_underline_color)
+    BORDER_UNDER = int(op_underline_style)
+    
+    ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
     styles = get_styles_of_editor()
     count_all = 0
     count_replace = 0
@@ -137,8 +158,10 @@ def do_hilite(with_dialog=False):
             percent = percent_new
             msg_status('Spell-checking %d%%'% percent)
             if app_proc(PROC_GET_ESCAPE, ''):
-                msg_status('Spell-check stopped')
-                return
+                app_proc(PROC_SET_ESCAPE, '0')
+                if op_confirm_esc=='0' or msg_box('Stop spell-checking?', MB_OKCANCEL+MB_ICONQUESTION)==ID_OK:
+                    msg_status('Spell-check stopped')
+                    return
             
         line = ed.get_text_line(nline)
         n1 = -1
@@ -188,22 +211,22 @@ class Command:
     active = False
 
     def hilite(self):
-        do_hilite()
+        do_work()
         
     def check(self):
-        do_hilite(True)
+        do_work(True)
 
     def on_change_slow(self, ed_self):
-        do_hilite()
+        do_work()
 
     def on_open(self, ed_self):
-        do_hilite()
+        do_work()
 
     def toggle_hilite(self):
         self.active = not self.active
         if self.active:
             ev = 'on_change_slow'
-            do_hilite() 
+            do_work() 
         else:
             ev = ''
             ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
@@ -218,8 +241,20 @@ class Command:
         global op_lang
         global dict_obj
         op_lang = res
-        ini_write(filename_ini, 'op', 'dict', op_lang)
+        ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
         if self.active:
-            do_hilite()
+            do_work()
             
+    def edit_config(self):
+        global op_lang
+        global op_underline_color
+        global op_underline_style
+        global op_confirm_esc
+        global filename_ini
+        ini_write(filename_ini, 'op', 'lang', op_lang)
+        ini_write(filename_ini, 'op', 'underline_color', op_underline_color)
+        ini_write(filename_ini, 'op', 'underline_style', op_underline_style)
+        ini_write(filename_ini, 'op', 'confirm_esc_key', op_confirm_esc)
+        if os.path.isfile(filename_ini):
+            file_open(filename_ini)
