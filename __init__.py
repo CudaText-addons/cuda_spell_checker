@@ -165,6 +165,8 @@ def do_work(with_dialog=False):
     percent = 0
     app_proc(PROC_SET_ESCAPE, '0')
     
+    caret_pos = ed.get_carets()[0]
+    
     for nline in range(total_lines):
         percent_new = nline * 100 // total_lines
         if percent_new!=percent:
@@ -219,6 +221,7 @@ def do_work(with_dialog=False):
     
     global op_lang
     msg_status('Spell-check: %s, %d mistakes, %d replaces' % (op_lang, count_all, count_replace))
+    ed.set_caret(caret_pos[0], caret_pos[1])
 
 
 def do_work_if_name(ed_self):
