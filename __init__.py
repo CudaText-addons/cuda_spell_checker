@@ -13,6 +13,7 @@ op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
 op_underline_color = ini_read(filename_ini, 'op', 'underline_color', '#FF0000')
 op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
 op_confirm_esc = ini_read(filename_ini, 'op', 'confirm_esc_key', '0')
+op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
 
 sys.path.append(os.path.dirname(__file__))
 try:
@@ -135,6 +136,18 @@ def get_styles_of_editor():
 #print(get_styles_of_editor()) #debug
 
 
+def is_filetype_ok(fn):
+    global op_file_types
+    if op_file_types=='': return False
+    if op_file_types=='*': return True
+    if fn=='': return True #allow in untitled tabs
+    fn = os.path.basename(fn)
+    n = fn.rfind('.')
+    if n<0: return True #allow if no extension
+    fn = fn[n+1:]
+    return ','+fn+',' in ','+op_file_types+','
+
+
 def do_work(with_dialog=False):
     global op_underline_color
     global op_underline_style
@@ -207,6 +220,12 @@ def do_work(with_dialog=False):
     global op_lang
     msg_status('Spell-check: %s, %d mistakes, %d replaces' % (op_lang, count_all, count_replace))
 
+
+def do_work_if_name(ed_self):
+    if is_filetype_ok(ed_self.get_filename()): 
+        do_work()
+
+
 class Command:
     active = False
 
@@ -215,18 +234,15 @@ class Command:
         
     def check(self):
         do_work(True)
-
+    
     def on_change_slow(self, ed_self):
-        do_work()
-
-    def on_open(self, ed_self):
-        do_work()
+        do_work_if_name(ed_self)
 
     def toggle_hilite(self):
         self.active = not self.active
         if self.active:
             ev = 'on_change_slow'
-            do_work() 
+            do_work_if_name(ed)
         else:
             ev = ''
             ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
@@ -238,23 +254,26 @@ class Command:
     def select_dict(self):
         res = dlg_select_dict()
         if res is None: return
+        global filename_ini
         global op_lang
         global dict_obj
         op_lang = res
         ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
         if self.active:
-            do_work()
+            do_work_if_name(ed)
             
     def edit_config(self):
         global op_lang
         global op_underline_color
         global op_underline_style
         global op_confirm_esc
+        global op_file_types
         global filename_ini
         ini_write(filename_ini, 'op', 'lang', op_lang)
         ini_write(filename_ini, 'op', 'underline_color', op_underline_color)
         ini_write(filename_ini, 'op', 'underline_style', op_underline_style)
         ini_write(filename_ini, 'op', 'confirm_esc_key', op_confirm_esc)
+        ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
         if os.path.isfile(filename_ini):
             file_open(filename_ini)

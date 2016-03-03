@@ -1,6 +1,8 @@
 
-1.0.5
-+ commd "Edit config", more opts
+1.0.6
++ commd "Edit config"
++ opt confirm_esc
++ opt file_extension_list
 
 1.0.4
 + btn "Add" in dialog
