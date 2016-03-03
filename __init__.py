@@ -27,7 +27,7 @@ MARKTAG = 105 #uniq int for all marker plugins
 
 
 def is_word_char(s):
-    return s.isalpha() 
+    return s.isalpha() or (s in "'_"+string.digits)
     
 def is_word_alpha(s):
     #don't allow digit in word
