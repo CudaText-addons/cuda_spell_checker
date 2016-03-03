@@ -1,6 +1,6 @@
 [info]
 title=Spell Checker
-desc=Spell checker, shows underlines for wrong words, by command
+desc=Spell checker, shows underlines for misspelled words. See readme file for help.
 type=cudatext-plugin
 subdir=cuda_spell_checker
 
