@@ -1,4 +1,7 @@
 
+1.0.7
++ cmds "check", "check with suggest"
+
 1.0.6
 + commd "Edit config"
 + opt confirm_esc

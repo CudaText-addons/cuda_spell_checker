@@ -229,10 +229,10 @@ def do_work_if_name(ed_self):
 class Command:
     active = False
 
-    def hilite(self):
-        do_work()
-        
     def check(self):
+        do_work()
+    
+    def check_suggest(self):
         do_work(True)
     
     def on_change_slow(self, ed_self):
