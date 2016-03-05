@@ -3,6 +3,7 @@ title=Spell Checker
 desc=Spell checker, shows underlines for wrong words, by command
 type=cudatext-plugin
 subdir=cuda_spell_checker
+homepage=https://github.com/CudaText-addons/cuda_spell_checker
 
 [item1]
 section=commands
