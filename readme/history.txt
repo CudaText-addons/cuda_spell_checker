@@ -1,4 +1,7 @@
 
+1.0.8
+- fix check substr with ' at begin/end
+
 1.0.7
 + cmds "check", "check with suggest"
 

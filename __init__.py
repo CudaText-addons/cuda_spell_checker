@@ -186,12 +186,17 @@ def do_work(with_dialog=False):
             n2 = n1+1
             while n2<len(line) and is_word_char(line[n2]): n2+=1
             
+            #strip quote from begin of word
+            if line[n1]=="'": n1 += 1
+            #strip quote from end of word
+            if line[n2-1]=="'": n2 -= 1
+            
             text_x = n1
             text_y = nline
-            
+
             sub = line[n1:n2]
             n1 = n2
-            
+
             token = ed.get_token(TOKEN_AT_POS, text_x, text_y)
             if token:
                 ((start_x, start_y), (end_x, end_y), str_token, str_style) = token
