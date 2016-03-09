@@ -232,25 +232,33 @@ def do_work_if_name(ed_self):
     if is_filetype_ok(ed_self.get_filename()): 
         do_work()
 
-def do_goto(is_next):
-    m = ed.attr(MARKERS_GET, MARKTAG)
-    #tag=0, x=0, y=0, len=0, color_font=0, color_bg=0, color_border=0, font_bold=0, font_italic=0, font_strikeout=0, border_left=0, border_right=0, border_down=0, border_up=0
-    m = [(x, y) for (tag, x, y, len, cf, cb, cbb, f1, f2, f3, b1, b2, b3, b4) in m if tag==MARKTAG]
+
+def get_next_pos(is_next):
+    m = ed.attr(MARKERS_GET)
+    if not m: return
+    m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4) in m if tag==MARKTAG]
     if not m: return
     
     x1, y1, x2, y2 = ed.get_carets()[0]
     if is_next:
         m = [(x, y) for (x, y) in m if (y>y1) or ((y==y1) and (x>x1))]
         if not m: return
-        (x1, y1) = m[0]
+        return m[0]
     else:
         m = [(x, y) for (x, y) in m if (y<y1) or ((y==y1) and (x<x1))]
         if not m: return
-        (x1, y1) = m[len(m)-1]
+        return m[len(m)-1]
        
-    ed.set_caret(x1, y1)
-    msg_status('Go to misspelled: %d:%d' % (y1+1, x1+1))
     
+def do_goto(is_next):
+    m = get_next_pos(is_next)
+    if m:
+        ed.set_caret(m[0], m[1])
+        msg_status('Go to misspelled: %d:%d' % (m[1]+1, m[0]+1))
+    else:
+        msg_status('Cannot go to next/prev')
+    
+
 
 class Command:
     active = False
