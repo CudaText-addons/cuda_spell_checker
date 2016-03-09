@@ -1,4 +1,7 @@
 
+1.1.0
++ cmd "Go to next/prev misspelled"
+
 1.0.8
 - fix check substr with ' at begin/end
 

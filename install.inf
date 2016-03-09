@@ -27,10 +27,25 @@ method=select_dict
 
 [item5]
 section=commands
+caption=Spell Checker\Go to next misspelled
+method=goto_next
+
+[item6]
+section=commands
+caption=Spell Checker\Go to previous misspelled
+method=goto_prev
+
+[item7]
+section=commands
+caption=Spell Checker\-
+method=select_dict
+
+[item8]
+section=commands
 caption=Spell Checker\Select language
 method=select_dict
 
-[item6]
+[item9]
 section=commands
 caption=Spell Checker\Edit config
 method=edit_config
