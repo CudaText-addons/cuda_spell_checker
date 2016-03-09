@@ -233,25 +233,23 @@ def do_work_if_name(ed_self):
         do_work()
 
 
-def get_next_pos(is_next):
+def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
     if not m: return
     m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4) in m if tag==MARKTAG]
     if not m: return
     
-    x1, y1, x2, y2 = ed.get_carets()[0]
     if is_next:
         m = [(x, y) for (x, y) in m if (y>y1) or ((y==y1) and (x>x1))]
-        if not m: return
-        return m[0]
+        if m: return m[0]
     else:
         m = [(x, y) for (x, y) in m if (y<y1) or ((y==y1) and (x<x1))]
-        if not m: return
-        return m[len(m)-1]
+        if m: return m[len(m)-1]
        
     
 def do_goto(is_next):
-    m = get_next_pos(is_next)
+    x1, y1, x2, y2 = ed.get_carets()[0]
+    m = get_next_pos(x1, y1, is_next)
     if m:
         ed.set_caret(m[0], m[1])
         msg_status('Go to misspelled: %d:%d' % (m[1]+1, m[0]+1))
