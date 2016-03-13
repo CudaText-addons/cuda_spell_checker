@@ -152,7 +152,6 @@ def do_work(with_dialog=False):
     global op_underline_style
     global op_confirm_esc
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
-    COLOR_BACK = ed.get_prop(PROP_COLOR, 'EdTextBg')
     COLOR_UNDER = string_to_color(op_underline_color)
     BORDER_UNDER = int(op_underline_style)
     
@@ -220,7 +219,9 @@ def do_work(with_dialog=False):
                 n1 += len(rep)-len(sub)
             else:
                 ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),   
-                  COLOR_FORE, COLOR_BACK, COLOR_UNDER, 
+                  COLOR_FORE,
+                  COLOR_NONE, 
+                  COLOR_UNDER, 
                   0, 0, 0, 0, 0, BORDER_UNDER)
     
     global op_lang
