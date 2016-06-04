@@ -20,32 +20,42 @@ section=commands
 caption=Spell Checker\Check text, with suggestions
 method=check_suggest
 
-[item4]
+[item6]
+section=commands
+caption=Spell Checker\Check word
+method=check_word
+
+[item7]
+section=commands
+caption=Spell Checker\Check word, with suggestions
+method=check_word_suggest
+
+[item10]
 section=commands
 caption=Spell Checker\-
 method=select_dict
 
-[item5]
+[item11]
 section=commands
 caption=Spell Checker\Go to next misspelled
 method=goto_next
 
-[item6]
+[item12]
 section=commands
 caption=Spell Checker\Go to previous misspelled
 method=goto_prev
 
-[item7]
+[item20]
 section=commands
 caption=Spell Checker\-
 method=select_dict
 
-[item8]
+[item21]
 section=commands
 caption=Spell Checker\Select language
 method=select_dict
 
-[item9]
+[item22]
 section=commands
 caption=Spell Checker\Edit config
 method=edit_config

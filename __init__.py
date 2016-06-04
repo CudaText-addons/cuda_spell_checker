@@ -234,6 +234,52 @@ def do_work_if_name(ed_self):
         do_work()
 
 
+def do_work_word(with_dialog):
+    global op_underline_color
+    global op_underline_style
+    COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
+    COLOR_UNDER = string_to_color(op_underline_color)
+    BORDER_UNDER = int(op_underline_style)
+
+    x, y, x2, y2 = ed.get_carets()[0]
+    line = ed.get_text_line(y)
+    if not line: return
+
+    if not (0 <= x < len(line)) or not is_word_char(line[x]):
+        msg_status('Caret not on word-char')
+        return
+        
+    n1 = x
+    n2 = x
+    while n1>0 and is_word_char(line[n1-1]): n1-=1
+    while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
+    x = n1
+                                
+    sub = line[n1:n2+1]
+    if not is_word_alpha(sub):
+        msg_status('Not text-word under caret')
+        return
+        
+    print('Check word under caret: "%s"' % sub)
+    if dict_obj.check(sub): return
+
+    if with_dialog:
+        ed.set_caret(x, y, x+len(sub), y)
+        rep = dlg_spell(sub)
+        if rep is None: return
+        if rep=='': return
+        ed.delete(x, y, x+len(sub), y)
+        ed.insert(x, y, rep)
+    else:
+        ed.attr(MARKERS_ADD, MARKTAG, x, y, len(sub),   
+          COLOR_FORE,
+          COLOR_NONE, 
+          COLOR_UNDER, 
+          0, 0, 0, 0, 0, BORDER_UNDER)
+        
+    ed.set_caret(x, y) 
+    
+
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
     if not m: return
@@ -267,6 +313,12 @@ class Command:
     
     def check_suggest(self):
         do_work(True)
+        
+    def check_word(self):
+        do_work_word(False)
+    
+    def check_word_suggest(self):
+        do_work_word(True)
     
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
