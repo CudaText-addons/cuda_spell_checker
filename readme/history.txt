@@ -1,4 +1,8 @@
 
+2016.07.28
++ if selectn, checks sel only
+* refactored
+
 2016.06.04
 + cmds "check word"/ "check word with suggestions"
 

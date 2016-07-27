@@ -10,52 +10,58 @@ section=commands
 caption=Spell Checker\Show underlines after editing on/off
 method=toggle_hilite
 
-[item2]
+[item9]
+section=commands
+caption=Spell Checker\-
+method=_
+
+[item10]
 section=commands
 caption=Spell Checker\Check text
 method=check
 
-[item3]
+[item11]
 section=commands
 caption=Spell Checker\Check text, with suggestions
 method=check_suggest
 
-[item6]
+[item12]
 section=commands
 caption=Spell Checker\Check word
 method=check_word
 
-[item7]
+[item13]
 section=commands
 caption=Spell Checker\Check word, with suggestions
 method=check_word_suggest
 
-[item10]
+
+[item30]
 section=commands
 caption=Spell Checker\-
 method=select_dict
 
-[item11]
+[item31]
 section=commands
 caption=Spell Checker\Go to next misspelled
 method=goto_next
 
-[item12]
+[item32]
 section=commands
 caption=Spell Checker\Go to previous misspelled
 method=goto_prev
 
-[item20]
+[item40]
 section=commands
 caption=Spell Checker\-
 method=select_dict
 
-[item21]
+[item41]
 section=commands
 caption=Spell Checker\Select language
 method=select_dict
 
-[item22]
+[item42]
 section=commands
 caption=Spell Checker\Edit config
 method=edit_config

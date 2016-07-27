@@ -147,6 +147,63 @@ def is_filetype_ok(fn):
     return ','+fn+',' in ','+op_file_types+','
 
 
+def do_check_line(ed, nline, pos_from, pos_to, 
+    styles, with_dialog,
+    count_all, count_replace, 
+    COLOR_FORE, COLOR_UNDER, BORDER_UNDER):
+    """Checks one line, pos_from...pos_to"""
+    
+    line = ed.get_text_line(nline)
+    n1 = pos_from-1
+    while True:
+        n1 += 1
+        if n1>=len(line): break
+        if n1>pos_to: break
+        if not is_word_char(line[n1]): continue
+        n2 = n1+1
+        while n2<len(line) and is_word_char(line[n2]): n2+=1
+            
+        #strip quote from begin of word
+        if line[n1]=="'": n1 += 1
+        #strip quote from end of word
+        if line[n2-1]=="'": n2 -= 1
+            
+        text_x = n1
+        text_y = nline
+
+        sub = line[n1:n2]
+        n1 = n2
+
+        token = ed.get_token(TOKEN_AT_POS, text_x, text_y)
+        if token:
+            ((start_x, start_y), (end_x, end_y), str_token, str_style) = token
+            if not str_style in styles: continue
+            
+        if not is_word_alpha(sub): continue
+        if dict_obj.check(sub): continue
+
+        count_all += 1            
+        if with_dialog:
+            ed.set_caret(text_x, text_y, text_x+len(sub), text_y)
+            rep = dlg_spell(sub)
+            if rep is None: break
+            if rep=='': continue
+            count_replace += 1
+            ed.delete(text_x, text_y, text_x+len(sub), text_y)
+            ed.insert(text_x, text_y, rep)
+            #replace
+            line = ed.get_text_line(nline)
+            n1 += len(rep)-len(sub)
+        else:
+            ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),   
+              COLOR_FORE,
+              COLOR_NONE, 
+              COLOR_UNDER, 
+              0, 0, 0, 0, 0, BORDER_UNDER)
+              
+    return (count_all, count_replace)
+
+
 def do_work(with_dialog=False):
     global op_underline_color
     global op_underline_style
@@ -164,8 +221,18 @@ def do_work(with_dialog=False):
     app_proc(PROC_SET_ESCAPE, '0')
     
     caret_pos = ed.get_carets()[0]
+    x1, y1, x2, y2 = caret_pos
+    is_selection = y2>=0
+    if not is_selection:
+        x1 = 0
+        y1 = 0
+        x2 = 0xFFFFFF
+        y2 = ed.get_line_count()-1
+    else:
+        if (y1>y2) or (y1==y2 and x1>x2):
+            x1, y1, x2, y2 = x2, y2, x1, y1
     
-    for nline in range(total_lines):
+    for nline in range(y1, y2+1):
         percent_new = nline * 100 // total_lines
         if percent_new!=percent:
             percent = percent_new
@@ -175,57 +242,19 @@ def do_work(with_dialog=False):
                 if op_confirm_esc=='0' or msg_box('Stop spell-checking?', MB_OKCANCEL+MB_ICONQUESTION)==ID_OK:
                     msg_status('Spell-check stopped')
                     return
-            
-        line = ed.get_text_line(nline)
-        n1 = -1
-        n2 = -1
-        while True:
-            n1 += 1
-            if n1>=len(line): break
-            if not is_word_char(line[n1]): continue
-            n2 = n1+1
-            while n2<len(line) and is_word_char(line[n2]): n2+=1
-            
-            #strip quote from begin of word
-            if line[n1]=="'": n1 += 1
-            #strip quote from end of word
-            if line[n2-1]=="'": n2 -= 1
-            
-            text_x = n1
-            text_y = nline
 
-            sub = line[n1:n2]
-            n1 = n2
-
-            token = ed.get_token(TOKEN_AT_POS, text_x, text_y)
-            if token:
-                ((start_x, start_y), (end_x, end_y), str_token, str_style) = token
-                if not str_style in styles: continue
-            
-            if not is_word_alpha(sub): continue
-            if dict_obj.check(sub): continue
-
-            count_all += 1            
-            if with_dialog:
-                ed.set_caret(text_x, text_y, text_x+len(sub), text_y)
-                rep = dlg_spell(sub)
-                if rep is None: return
-                if rep=='': continue
-                count_replace += 1
-                ed.delete(text_x, text_y, text_x+len(sub), text_y)
-                ed.insert(text_x, text_y, rep)
-                #replace
-                line = ed.get_text_line(nline)
-                n1 += len(rep)-len(sub)
-            else:
-                ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),   
-                  COLOR_FORE,
-                  COLOR_NONE, 
-                  COLOR_UNDER, 
-                  0, 0, 0, 0, 0, BORDER_UNDER)
+        local_from = 0 if nline!=y1 else x1
+        local_to = 0xFFFFFF if nline!=y2 else x2
+        
+        count_all, count_replace = do_check_line(ed, nline, 
+            local_from, local_to,
+            styles, with_dialog,
+            count_all, count_replace, 
+            COLOR_FORE, COLOR_UNDER, BORDER_UNDER)
     
     global op_lang
-    msg_status('Spell-check: %s, %d mistakes, %d replaces' % (op_lang, count_all, count_replace))
+    msg_sel = 'selection only' if is_selection else 'all text' 
+    msg_status('Spell-check: %s, %s, %d mistakes, %d replaces' % (op_lang, msg_sel, count_all, count_replace))
     ed.set_caret(caret_pos[0], caret_pos[1])
 
 
@@ -260,9 +289,11 @@ def do_work_word(with_dialog):
         msg_status('Not text-word under caret')
         return
         
-    print('Check word under caret: "%s"' % sub)
-    if dict_obj.check(sub): return
+    if dict_obj.check(sub):
+        msg_status('Word ok: "%s"' % sub)
+        return
 
+    msg_status('Word misspelled: "%s"' % sub)
     if with_dialog:
         ed.set_caret(x, y, x+len(sub), y)
         rep = dlg_spell(sub)
