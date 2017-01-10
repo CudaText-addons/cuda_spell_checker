@@ -113,23 +113,15 @@ def dlg_select_dict():
     return items[res]
     
 
-def get_styles_from_file(fn, lexer):
-    if not os.path.isfile(fn): return
-    j = json_parser.loads(open(fn).read())
-    return j.get('StringStyles', {}).get(lexer, []) \
-         + j.get('CommentStyles', {}).get(lexer, [])
-
-
 def get_styles_of_editor():
     lexer = ed.get_prop(PROP_LEXER_FILE)
     if not lexer: return
-    fn_user = os.path.join(app_path(APP_DIR_SETTINGS), 'user_lexers.json')
-    fn_def = os.path.join(os.path.dirname(app_path(APP_DIR_SETTINGS)), 'settings_default', 'default_lexers.json')
-    s1 = get_styles_from_file(fn_user, lexer)
-    s2 = get_styles_from_file(fn_def, lexer)
     res = []
-    if s1: res+=s1
-    if s2: res+=s2
+    s1 = lexer_proc(LEXER_GET_STYLES_COMMENTS, lexer)
+    s2 = lexer_proc(LEXER_GET_STYLES_STRINGS, lexer)
+    if s1: res += s1.split(',')
+    if s2: res += s2.split(',')
+    print('Spellcheck: styles of lexer "%s": %s'%(lexer, res))
     return res
     
 #print(get_styles_of_editor()) #debug

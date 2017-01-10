@@ -1,4 +1,7 @@
 
+2017.01.10
+- use new API of Cud, to take only comments/strings of lexer
+
 2016.07.28
 + if selectn, checks sel only
 * refactored

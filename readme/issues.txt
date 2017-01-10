@@ -1,3 +1,0 @@
-
-post issues here:
-https://github.com/CudaText-addons/cuda_spell_checker/issues
