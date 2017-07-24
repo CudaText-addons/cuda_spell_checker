@@ -116,11 +116,13 @@ def get_styles_of_editor():
     lexer = ed.get_prop(PROP_LEXER_FILE)
     if not lexer: return
     res = []
-    s1 = lexer_proc(LEXER_GET_STYLES_COMMENTS, lexer)
-    s2 = lexer_proc(LEXER_GET_STYLES_STRINGS, lexer)
-    if s1: res += s1.split(',')
-    if s2: res += s2.split(',')
-    print('Spellcheck: styles of lexer "%s": %s'%(lexer, res))
+
+    prop = lexer_proc(LEXER_GET_PROP, lexer)
+    if prop:
+        res += prop['st_c'] #styles of comments
+        res += prop['st_s'] #styles of strings
+
+    print('SpellChecker: styles of lexer "%s": %s'%(lexer, res))
     return res
 
 #print(get_styles_of_editor()) #debug

@@ -1,6 +1,7 @@
 
 2017.07.24
 - fix: suggest-dialog Cancel btn must stop all work
+- avoid using deprecated APIs
 
 2017.01.10
 - use new API of editor, to take only comments/strings of lexer
