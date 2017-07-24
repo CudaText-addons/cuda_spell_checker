@@ -1,28 +1,31 @@
 
+2017.07.24
+- fix: suggest-dialog Cancel btn must stop all work
+
 2017.01.10
-- use new API of Cud, to take only comments/strings of lexer
+- use new API of editor, to take only comments/strings of lexer
 
 2016.07.28
-+ if selectn, checks sel only
++ if selected text, must check selection only
 * refactored
 
 2016.06.04
-+ cmds "check word"/ "check word with suggestions"
++ commands "Check word", "Check word with suggestions"
 
 1.0.8
 - fix check substr with ' at begin/end
 
 1.0.7
-+ cmds "check", "check with suggest"
++ cmds "Check", "Check with suggest"
 
 1.0.6
-+ commd "Edit config"
-+ opt confirm_esc
-+ opt file_extension_list
++ command "Edit config"
++ option confirm_esc
++ option file_extension_list
 
 1.0.4
-+ btn "Add" in dialog
-+ progress on checking big file, can stop (esc)
++ button "Add" in suggest-dialog
++ progress on checking big file, can stop (Esc)
 
 1.0.2
 + support Rus/Ger chars
