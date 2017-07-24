@@ -1,6 +1,6 @@
 [info]
 title=Spell Checker
-desc=Spell checker, shows underlines for wrong words, by command
+desc=Spell checker, based on Hunspell dictionaries. Shows red underlines for misspelled words, gives suggestions dialog. 
 type=cudatext-plugin
 subdir=cuda_spell_checker
 homepage=https://github.com/CudaText-addons/cuda_spell_checker
