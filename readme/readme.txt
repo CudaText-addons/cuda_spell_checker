@@ -19,8 +19,8 @@ Dialog buttons:
     - Add: skip word and add it to a user dictionary for future
     - Cancel: stop all work
 
-Feature: not all text is checked, only words in "syntax comments" and "syntax strings".
-To set which lexer styles are "comments" and "strings", open Lexer Properties dialog in CudaText, and use "Commenting" tab of dialog to set these styles. 
+Feature:
+For lexers, not all text is checked, only words in "syntax comments" and "syntax strings". For none-lexer, entire text is checked. To set which lexer styles are "comments" and "strings", open Lexer Properties dialog in CudaText, and use "Commenting" tab of dialog to set these styles. E.g. in HTML/Markdown lexers, correct styles are set, so correct parts are checked. 
 
 
 Author: Alexey T (CudaText)
