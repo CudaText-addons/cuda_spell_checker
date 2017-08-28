@@ -39,7 +39,7 @@ method=check_word_suggest
 [item30]
 section=commands
 caption=Spell Checker\-
-method=select_dict
+method=_
 
 [item31]
 section=commands
@@ -54,7 +54,7 @@ method=goto_prev
 [item40]
 section=commands
 caption=Spell Checker\-
-method=select_dict
+method=_
 
 [item41]
 section=commands

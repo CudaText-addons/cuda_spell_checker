@@ -1,4 +1,7 @@
 
+2017.08.28
+- fixed error in install.inf for command "Select language"
+
 2017.07.24
 - fix: suggest-dialog Cancel btn must stop all work
 - avoid using deprecated APIs
