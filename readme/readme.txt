@@ -10,7 +10,7 @@ It's possible to install additional dictionaries:
 https://github.com/titoBouzout/Dictionaries
 Rename to short names: Russian.* to ru.* or ru_RU.*
 Copy into folder:
-    - on Windows: [plugin_dir]\enchant\share\enchant\myspell\
+    - on Windows: [CudaText_dir]\py\cuda_spell_checker\enchant\share\enchant\myspell\
     - on Unix: ~/.enchant/myspell/
 
 Misspelled words are highlighted with red underlines.
