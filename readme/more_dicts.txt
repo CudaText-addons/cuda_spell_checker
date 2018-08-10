@@ -3,7 +3,7 @@ https://github.com/titoBouzout/Dictionaries
 
 Rename to short names: Russian.* to ru.* or ru_RU.*
 Copy into folder:
-- on Linux/macOS/FreeBSD:
+- on Unix:
   ~/.enchant/myspell/
 - on Windows:
   [plugin_dir]\enchant\share\enchant\myspell\
