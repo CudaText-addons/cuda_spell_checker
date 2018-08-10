@@ -1,6 +1,6 @@
 
 2018.08.10
-+ menu item "Config" moved to "Options / Settings-plugins"
+* some menu items are moved to "Options / Settings-plugins"
 + added menu item "Options / Settings-plugins / Spell Checker / Enable/disable checking on opening file"
 + added readme info about config
 
