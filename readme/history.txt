@@ -1,7 +1,8 @@
 
 2018.08.10
++ menu item "Config" moved to "Options / Settings-plugins"
++ added menu item "Options / Settings-plugins / Spell Checker / Enable/disable checking on opening file"
 + added readme info about config
-+ menu items "Config", "Select lang" moved to "Options / Settings-plugins"
 
 2017.08.28
 - fixed error in install.inf for command "Select language"
