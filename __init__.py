@@ -170,9 +170,16 @@ def do_check_line(ed, nline, pos_from, pos_to,
         sub = line[n1:n2]
         n1 = n2
 
-        token = ed.get_token(TOKEN_AT_POS, text_x, text_y)
-        if token:
-            ((start_x, start_y), (end_x, end_y), str_token, str_style) = token
+        str_token = ''
+        str_style = ''
+        for d in ed.get_token(TOKEN_LIST_SUB, text_y, text_y):
+            x1 = d['x1']
+            x2 = d['x2']
+            if x1<=text_x<x2:
+                str_token = d['str']
+                str_style = d['style']
+                break
+        if str_token:
             if not str_style in styles: continue
 
         if not is_word_alpha(sub): continue
