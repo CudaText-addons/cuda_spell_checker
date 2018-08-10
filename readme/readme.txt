@@ -22,6 +22,17 @@ Dialog buttons:
 Feature:
 For lexers, not all text is checked, only words in "syntax comments" and "syntax strings". For none-lexer, entire text is checked. To set which lexer styles are "comments" and "strings", open Lexer Properties dialog in CudaText, and use "Commenting" tab of dialog to set these styles. E.g. in HTML/Markdown lexers, correct styles are set, so correct parts are checked. 
 
+Plugin have several options in ini-file, call command "Options / Settings-plugins / Spell Checker / Config".
+Options:
+    - "lang": current language which user chose in "Select language" command
+    - "underline_color": color of misspelled word underlines, in HTML form
+    - "underline_style" (0..6): style of line below words
+    - "confirm_esc_key" (0/1): allows to show confirmation when user presses Esc during long checking
+    - "file_extension_list": 
+        - "" (empty): disable on all files
+        - "*": enable on all files
+        - comma-separated list like "ext1,ext2,ext3": these extensions will be checked
+         
 
 Author: Alexey T (CudaText)
 License: MIT
