@@ -8,11 +8,14 @@ from cudatext import *
 
 json_parser = JsonComment(json)
 
+def bool_to_str(v): return '1' if v else '0'
+def str_to_bool(s): return s=='1'
+
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
 op_underline_color = ini_read(filename_ini, 'op', 'underline_color', '#FF0000')
 op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
-op_confirm_esc = ini_read(filename_ini, 'op', 'confirm_esc_key', '0')
+op_confirm_esc = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key', '0'))
 op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
 
 sys.path.append(os.path.dirname(__file__))
@@ -236,7 +239,8 @@ def do_work(with_dialog=False):
             msg_status('Spell-checking %d%%'% percent)
             if app_proc(PROC_GET_ESCAPE, ''):
                 app_proc(PROC_SET_ESCAPE, '0')
-                if op_confirm_esc=='0' or msg_box('Stop spell-checking?', MB_OKCANCEL+MB_ICONQUESTION)==ID_OK:
+                if not op_confirm_esc or \
+                  msg_box('Stop spell-checking?', MB_OKCANCEL+MB_ICONQUESTION)==ID_OK:
                     msg_status('Spell-check stopped')
                     return
 
@@ -388,12 +392,30 @@ class Command:
         ini_write(filename_ini, 'op', 'lang', op_lang)
         ini_write(filename_ini, 'op', 'underline_color', op_underline_color)
         ini_write(filename_ini, 'op', 'underline_style', op_underline_style)
-        ini_write(filename_ini, 'op', 'confirm_esc_key', op_confirm_esc)
+        ini_write(filename_ini, 'op', 'confirm_esc_key', bool_to_str(op_confirm_esc))
         ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
         if os.path.isfile(filename_ini):
             file_open(filename_ini)
 
     def goto_next(self):
         do_goto(True)
+
     def goto_prev(self):
         do_goto(False)
+
+    def on_open(self, ed_self):
+        do_work()
+
+    def toggle_on_open(self):
+        fn = os.path.join(os.path.dirname(__file__), 'install.inf')
+        v = ini_read(fn, 'item1', 'events', '')
+        if not v:
+            v = 'on_open'
+        else:
+            v = ''
+        ini_write(fn, 'item1', 'events', v)
+        msg_box('To not slow down CudaText when setting is Off, plugin saves this setting to install.inf file. '+
+                'So you need to re-enable this setting each time you update Spell Checker plugin. '+
+                'Setting will take effect after CudaText restart.',
+                MB_OK+MB_ICONINFO)
+        

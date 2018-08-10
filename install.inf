@@ -1,6 +1,6 @@
 [info]
 title=Spell Checker
-desc=Spell checker, based on Hunspell dictionaries. Shows red underlines for misspelled words, gives suggestions dialog. 
+desc=Spell checker, based on Hunspell dictionaries. Shows red underlines for misspelled words, gives suggestions dialog.
 type=cudatext-plugin
 subdir=cuda_spell_checker
 homepage=https://github.com/CudaText-addons/cuda_spell_checker
@@ -8,6 +8,10 @@ os=win32,linux,macos,freebsd
 ;win64 not supported yet
 
 [item1]
+section=events
+events=
+
+[item2]
 section=commands
 caption=Spell Checker\Show underlines after editing on/off
 method=toggle_hilite
@@ -37,7 +41,6 @@ section=commands
 caption=Spell Checker\Check word, with suggestions
 method=check_word_suggest
 
-
 [item30]
 section=commands
 caption=Spell Checker\-
@@ -65,6 +68,12 @@ method=select_dict
 menu=op
 
 [item42]
+section=commands
+caption=Spell Checker\Enable/disable checking on opening file
+method=toggle_on_open
+menu=o
+
+[item45]
 section=commands
 caption=Spell Checker\Config
 method=config
