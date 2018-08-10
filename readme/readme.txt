@@ -1,10 +1,17 @@
 Plugin for CudaText.
 Gives spell-checking by using Enchant/PyEnchant libraries. 
-Uses Hunspell dictionaries. It's possible to install additional dicts: see more_dicts.txt. 
 
 - Windows 32-bit: supported, binary DLL files shipped with plugin
 - Windows 64-bit: not supported yet (missed x64 DLLs)
-- Linux, macOS: supported, but you must install Enchant binary files (using OS package manager).
+- Unix: supported, but you must install Enchant binary files (using OS package manager)
+
+Uses Hunspell dictionaries.
+It's possible to install additional dictionaries:
+https://github.com/titoBouzout/Dictionaries
+Rename to short names: Russian.* to ru.* or ru_RU.*
+Copy into folder:
+    - on Windows: [plugin_dir]\enchant\share\enchant\myspell\
+    - on Unix: ~/.enchant/myspell/
 
 Misspelled words are highlighted with red underlines.
 Use commands in "Plugins" menu:
