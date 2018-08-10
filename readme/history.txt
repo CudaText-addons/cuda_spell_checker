@@ -1,4 +1,8 @@
 
+2018.08.10
++ added readme info about config
++ menu items "Config", "Select lang" moved to "Options / Settings-plugins"
+
 2017.08.28
 - fixed error in install.inf for command "Select language"
 
