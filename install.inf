@@ -60,10 +60,12 @@ method=_
 
 [item41]
 section=commands
-caption=Spell Checker\Select language
+caption=Spell Checker\Select language...
 method=select_dict
+menu=op
 
 [item42]
 section=commands
-caption=Spell Checker\Edit config
-method=edit_config
+caption=Spell Checker\Config
+method=config
+menu=o

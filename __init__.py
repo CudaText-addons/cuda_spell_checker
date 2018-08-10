@@ -378,7 +378,7 @@ class Command:
         if self.active:
             do_work_if_name(ed)
 
-    def edit_config(self):
+    def config(self):
         global op_lang
         global op_underline_color
         global op_underline_style
