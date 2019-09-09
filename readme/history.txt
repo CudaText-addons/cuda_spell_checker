@@ -1,4 +1,7 @@
 
+2019.09.09
++ file readme.txt is fixed and extended, added info how to permamently enable on_open, on_change_slow
+
 2018.08.10
 * some menu items are moved to "Options / Settings-plugins"
 + added menu item "Options / Settings-plugins / Spell Checker / Enable/disable checking on opening file"
