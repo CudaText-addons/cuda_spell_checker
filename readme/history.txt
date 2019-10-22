@@ -1,4 +1,7 @@
 
+2019.10.22
++ used new API of CudaText 1.89 to speedup detection of syntax comments+strings. Speed is greatly increased.
+
 2019.09.09
 + file readme.txt is fixed and extended, added info how to permamently enable on_open, on_change_slow
 

@@ -115,22 +115,6 @@ def dlg_select_dict():
     return items[res]
 
 
-def get_styles_of_editor():
-    lexer = ed.get_prop(PROP_LEXER_FILE)
-    if not lexer: return
-    res = []
-
-    prop = lexer_proc(LEXER_GET_PROP, lexer)
-    if prop:
-        res += prop['st_c'] #styles of comments
-        res += prop['st_s'] #styles of strings
-
-    print('SpellChecker: styles of lexer "%s": %s'%(lexer, res))
-    return res
-
-#print(get_styles_of_editor()) #debug
-
-
 def is_filetype_ok(fn):
     global op_file_types
     if op_file_types=='': return False
@@ -144,7 +128,7 @@ def is_filetype_ok(fn):
 
 
 def do_check_line(ed, nline, pos_from, pos_to,
-    styles, with_dialog,
+    with_dialog,
     count_all, count_replace,
     COLOR_FORE, COLOR_UNDER, BORDER_UNDER):
     """Checks one line, pos_from...pos_to"""
@@ -170,19 +154,9 @@ def do_check_line(ed, nline, pos_from, pos_to,
         sub = line[n1:n2]
         n1 = n2
 
-        str_token = ''
-        str_style = ''
-        toks = ed.get_token(TOKEN_LIST_SUB, text_y, text_y)
-        if toks:
-            for d in toks:
-                x1 = d['x1']
-                x2 = d['x2']
-                if x1<=text_x<x2:
-                    str_token = d['str']
-                    str_style = d['style']
-                    break
-        if str_token:
-            if not str_style in styles: continue
+        kind = ed.get_token(TOKEN_GET_KIND, text_x, text_y)
+        if kind not in ('c', 's'):
+            continue
 
         if not is_word_alpha(sub): continue
         if dict_obj.check(sub): continue
@@ -222,7 +196,6 @@ def do_work(with_dialog=False):
     BORDER_UNDER = int(op_underline_style)
 
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
-    styles = get_styles_of_editor()
     count_all = 0
     count_replace = 0
     total_lines = ed.get_line_count()
@@ -258,7 +231,7 @@ def do_work(with_dialog=False):
 
         res = do_check_line(ed, nline,
             local_from, local_to,
-            styles, with_dialog,
+            with_dialog,
             count_all, count_replace,
             COLOR_FORE, COLOR_UNDER, BORDER_UNDER)
         if res is None: return
