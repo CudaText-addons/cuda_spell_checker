@@ -135,6 +135,14 @@ def do_check_line(ed, nline, pos_from, pos_to,
 
     line = ed.get_text_line(nline)
     n1 = pos_from-1
+
+    lexer = ed.get_prop(PROP_LEXER_FILE)
+    if lexer:
+        props = lexer_proc(LEXER_GET_PROP, lexer)
+        chk_tok = props['st_c']!='' or props['st_s']!=''
+    else:
+        chk_tok = False
+    
     while True:
         n1 += 1
         if n1>=len(line): break
@@ -154,9 +162,10 @@ def do_check_line(ed, nline, pos_from, pos_to,
         sub = line[n1:n2]
         n1 = n2
 
-        kind = ed.get_token(TOKEN_GET_KIND, text_x, text_y)
-        if kind not in ('c', 's'):
-            continue
+        if chk_tok:
+            kind = ed.get_token(TOKEN_GET_KIND, text_x, text_y)
+            if kind not in ('c', 's'):
+                continue
 
         if not is_word_alpha(sub): continue
         if dict_obj.check(sub): continue
