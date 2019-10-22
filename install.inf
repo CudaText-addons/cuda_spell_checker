@@ -32,6 +32,11 @@ section=commands
 caption=Spell Checker\Check word, with suggestions
 method=check_word_suggest
 
+[item25]
+section=commands
+caption=Spell Checker\Remove marks
+method=del_marks
+
 [item30]
 section=commands
 caption=Spell Checker\-

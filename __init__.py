@@ -410,3 +410,5 @@ class Command:
                 'Setting will take effect after CudaText restart.',
                 MB_OK+MB_ICONINFO)
         
+    def del_marks(self):
+        ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
