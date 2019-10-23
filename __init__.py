@@ -13,7 +13,7 @@ def str_to_bool(s): return s=='1'
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
-op_underline_color = ini_read(filename_ini, 'op', 'underline_color', '#FF0000')
+op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
 op_confirm_esc = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key', '0'))
 op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
@@ -28,7 +28,6 @@ except Exception as ex:
 
 MARKTAG = 105 #uniq int for all marker plugins
 
-
 def is_word_char(s):
     return s.isalpha() or (s in "'_"+string.digits)
 
@@ -41,21 +40,6 @@ def is_word_alpha(s):
         if ch in digits: return False
     if s[0] in "'": return False
     return True
-
-def string_to_color(s):
-    """ converts #RRGGBB or #RGB to integers"""
-    s = s.strip()
-    while s[0] == '#': s = s[1:]
-    # get bytes in reverse order to deal with PIL quirk
-    if len(s)==3:
-        s = s[0]*2 + s[1]*2 + s[2]*2
-    if len(s)!=6:
-        raise Exception('Incorrect color token: '+s)
-    s = s[-2:] + s[2:4] + s[:2]
-    # finally, make it numeric
-    color = int(s, 16)
-    return color
-
 
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
@@ -190,7 +174,7 @@ def do_check_line(ed, nline, pos_from, pos_to,
             ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),
               COLOR_FORE,
               COLOR_NONE,
-              COLOR_UNDER,
+              op_underline_color,
               0, 0, 0, 0, 0, BORDER_UNDER,
               show_on_map=True)
 
@@ -202,7 +186,6 @@ def do_work(with_dialog=False):
     global op_underline_style
     global op_confirm_esc
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
-    COLOR_UNDER = string_to_color(op_underline_color)
     BORDER_UNDER = int(op_underline_style)
 
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
@@ -243,7 +226,7 @@ def do_work(with_dialog=False):
             local_from, local_to,
             with_dialog,
             count_all, count_replace,
-            COLOR_FORE, COLOR_UNDER, BORDER_UNDER)
+            COLOR_FORE, op_underline_color, BORDER_UNDER)
         if res is None: return
         count_all, count_replace = res
 
@@ -262,7 +245,6 @@ def do_work_word(with_dialog):
     global op_underline_color
     global op_underline_style
     COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
-    COLOR_UNDER = string_to_color(op_underline_color)
     BORDER_UNDER = int(op_underline_style)
 
     x, y, x2, y2 = ed.get_carets()[0]
@@ -300,7 +282,7 @@ def do_work_word(with_dialog):
         ed.attr(MARKERS_ADD, MARKTAG, x, y, len(sub),
           COLOR_FORE,
           COLOR_NONE,
-          COLOR_UNDER,
+          op_underline_color,
           0, 0, 0, 0, 0, BORDER_UNDER,
           show_on_map=True)
 
@@ -383,7 +365,6 @@ class Command:
         global op_file_types
         global filename_ini
         ini_write(filename_ini, 'op', 'lang', op_lang)
-        ini_write(filename_ini, 'op', 'underline_color', op_underline_color)
         ini_write(filename_ini, 'op', 'underline_style', op_underline_style)
         ini_write(filename_ini, 'op', 'confirm_esc_key', bool_to_str(op_confirm_esc))
         ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
