@@ -191,7 +191,8 @@ def do_check_line(ed, nline, pos_from, pos_to,
               COLOR_FORE,
               COLOR_NONE,
               COLOR_UNDER,
-              0, 0, 0, 0, 0, BORDER_UNDER)
+              0, 0, 0, 0, 0, BORDER_UNDER,
+              show_on_map=True)
 
     return (count_all, count_replace)
 
@@ -300,7 +301,8 @@ def do_work_word(with_dialog):
           COLOR_FORE,
           COLOR_NONE,
           COLOR_UNDER,
-          0, 0, 0, 0, 0, BORDER_UNDER)
+          0, 0, 0, 0, 0, BORDER_UNDER,
+          show_on_map=True)
 
     ed.set_caret(x, y)
 
