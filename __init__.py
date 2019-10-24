@@ -114,7 +114,7 @@ def is_filetype_ok(fn):
 def do_check_line(ed, nline, pos_from, pos_to,
     with_dialog,
     count_all, count_replace,
-    COLOR_FORE, COLOR_UNDER, BORDER_UNDER):
+    COLOR_UNDER, BORDER_UNDER):
     """Checks one line, pos_from...pos_to"""
 
     line = ed.get_text_line(nline)
@@ -172,7 +172,7 @@ def do_check_line(ed, nline, pos_from, pos_to,
             n1 += len(rep)-len(sub)
         else:
             ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),
-              COLOR_FORE,
+              COLOR_NONE,
               COLOR_NONE,
               op_underline_color,
               0, 0, 0, 0, 0, BORDER_UNDER,
@@ -185,7 +185,6 @@ def do_work(with_dialog=False):
     global op_underline_color
     global op_underline_style
     global op_confirm_esc
-    COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
     BORDER_UNDER = int(op_underline_style)
 
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
@@ -226,7 +225,7 @@ def do_work(with_dialog=False):
             local_from, local_to,
             with_dialog,
             count_all, count_replace,
-            COLOR_FORE, op_underline_color, BORDER_UNDER)
+            op_underline_color, BORDER_UNDER)
         if res is None: return
         count_all, count_replace = res
 
@@ -244,7 +243,6 @@ def do_work_if_name(ed_self):
 def do_work_word(with_dialog):
     global op_underline_color
     global op_underline_style
-    COLOR_FORE = ed.get_prop(PROP_COLOR, 'EdTextFont')
     BORDER_UNDER = int(op_underline_style)
 
     x, y, x2, y2 = ed.get_carets()[0]
@@ -280,7 +278,7 @@ def do_work_word(with_dialog):
         ed.insert(x, y, rep)
     else:
         ed.attr(MARKERS_ADD, MARKTAG, x, y, len(sub),
-          COLOR_FORE,
+          COLOR_NONE,
           COLOR_NONE,
           op_underline_color,
           0, 0, 0, 0, 0, BORDER_UNDER,
