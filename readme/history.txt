@@ -1,4 +1,7 @@
 
+2019.10.31
++ used API of CudaText 1.89 to place many marks at once
+
 2019.10.22
 + used API of CudaText 1.89 to speedup detection of syntax comments+strings - speed is greatly increased
 + add command "Remove marks"
