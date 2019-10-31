@@ -114,7 +114,7 @@ def is_filetype_ok(fn):
 def do_check_line(ed, nline, pos_from, pos_to,
     with_dialog,
     count_all, count_replace,
-    marks):
+    res_x, res_y, res_n):
     """Checks one line, pos_from...pos_to"""
 
     line = ed.get_text_line(nline)
@@ -171,7 +171,9 @@ def do_check_line(ed, nline, pos_from, pos_to,
             line = ed.get_text_line(nline)
             n1 += len(rep)-len(sub)
         else:
-            marks.append((text_x, text_y, len(sub)))
+            res_x.append(text_x)
+            res_y.append(text_y)
+            res_n.append(len(sub))
 
     return (count_all, count_replace)
 
@@ -183,7 +185,9 @@ def do_work(with_dialog=False):
     global op_lang
 
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
-    marks = []
+    res_x = []
+    res_y = []
+    res_n = []
     count_all = 0
     count_replace = 0
     total_lines = ed.get_line_count()
@@ -221,14 +225,12 @@ def do_work(with_dialog=False):
             local_from, local_to,
             with_dialog,
             count_all, count_replace,
-            marks)
+            res_x, res_y, res_n)
         if res is None: return
         count_all, count_replace = res
 
     ed.attr(MARKERS_ADD_MANY, MARKTAG,
-        [i[0] for i in marks],
-        [i[1] for i in marks],
-        [i[2] for i in marks],
+        res_x, res_y, res_n,
         COLOR_NONE,
         COLOR_NONE,
         op_underline_color,
