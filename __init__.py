@@ -114,7 +114,7 @@ def is_filetype_ok(fn):
 def do_check_line(ed, nline, pos_from, pos_to,
     with_dialog,
     count_all, count_replace,
-    COLOR_UNDER, BORDER_UNDER):
+    marks):
     """Checks one line, pos_from...pos_to"""
 
     line = ed.get_text_line(nline)
@@ -126,7 +126,7 @@ def do_check_line(ed, nline, pos_from, pos_to,
         chk_tok = props['st_c']!='' or props['st_s']!=''
     else:
         chk_tok = False
-    
+
     while True:
         n1 += 1
         if n1>=len(line): break
@@ -171,12 +171,7 @@ def do_check_line(ed, nline, pos_from, pos_to,
             line = ed.get_text_line(nline)
             n1 += len(rep)-len(sub)
         else:
-            ed.attr(MARKERS_ADD, MARKTAG, text_x, text_y, len(sub),
-              COLOR_NONE,
-              COLOR_NONE,
-              op_underline_color,
-              0, 0, 0, 0, 0, BORDER_UNDER,
-              show_on_map=True)
+            marks.append((text_x, text_y, len(sub)))
 
     return (count_all, count_replace)
 
@@ -185,9 +180,10 @@ def do_work(with_dialog=False):
     global op_underline_color
     global op_underline_style
     global op_confirm_esc
-    BORDER_UNDER = int(op_underline_style)
+    global op_lang
 
     ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
+    marks = []
     count_all = 0
     count_replace = 0
     total_lines = ed.get_line_count()
@@ -225,13 +221,23 @@ def do_work(with_dialog=False):
             local_from, local_to,
             with_dialog,
             count_all, count_replace,
-            op_underline_color, BORDER_UNDER)
+            marks)
         if res is None: return
         count_all, count_replace = res
 
-    global op_lang
-    msg_sel = 'selection only' if is_selection else 'all text'
-    msg_status('Spell-check: %s, %s, %d mistakes, %d replaces' % (op_lang, msg_sel, count_all, count_replace))
+    ed.attr(MARKERS_ADD_MANY, MARKTAG,
+        [i[0] for i in marks],
+        [i[1] for i in marks],
+        [i[2] for i in marks],
+        COLOR_NONE,
+        COLOR_NONE,
+        op_underline_color,
+        0, 0, 0, 0, 0,
+        int(op_underline_style),
+        show_on_map=True)
+
+    msg_sel = 'sel only' if is_selection else 'all text'
+    msg_status('Spell check: %s, %s, %d mistake(s), %d replace(s)' % (op_lang, msg_sel, count_all, count_replace))
     ed.set_caret(caret_pos[0], caret_pos[1])
 
 
@@ -390,6 +396,6 @@ class Command:
                 'So you need to re-enable this setting each time you update Spell Checker plugin. '+
                 'Setting will take effect after CudaText restart.',
                 MB_OK+MB_ICONINFO)
-        
+
     def del_marks(self):
         ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
