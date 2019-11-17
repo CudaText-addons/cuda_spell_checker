@@ -111,20 +111,24 @@ def is_filetype_ok(fn):
     return ','+fn+',' in ','+op_file_types+','
 
 
+def need_check_tokens(ed):
+
+    lexer = ed.get_prop(PROP_LEXER_FILE)
+    if lexer:
+        props = lexer_proc(LEXER_GET_PROP, lexer)
+        return props['st_c']!='' or props['st_s']!=''
+    else:
+        return False
+
+
 def do_check_line(ed, nline,
     with_dialog,
+    check_tokens,
     count_all, count_replace,
     res_x, res_y, res_n):
 
     line = ed.get_text_line(nline)
     n1 = -1
-
-    lexer = ed.get_prop(PROP_LEXER_FILE)
-    if lexer:
-        props = lexer_proc(LEXER_GET_PROP, lexer)
-        chk_tok = props['st_c']!='' or props['st_s']!=''
-    else:
-        chk_tok = False
 
     while True:
         n1 += 1
@@ -144,7 +148,7 @@ def do_check_line(ed, nline,
         sub = line[n1:n2]
         n1 = n2
 
-        if chk_tok:
+        if check_tokens:
             kind = ed.get_token(TOKEN_GET_KIND, text_x, text_y)
             if kind not in ('c', 's'):
                 continue
@@ -202,6 +206,8 @@ def do_work(with_dialog=False):
         if y1>y2:
             y1, y2 = y2, y1
 
+    chk_tokens = need_check_tokens(ed)
+
     for nline in range(y1, y2+1):
         percent_new = nline * 100 // total_lines
         if percent_new!=percent:
@@ -216,6 +222,7 @@ def do_work(with_dialog=False):
 
         res = do_check_line(ed, nline,
             with_dialog,
+            chk_tokens,
             count_all, count_replace,
             res_x, res_y, res_n)
         if res is None: return
