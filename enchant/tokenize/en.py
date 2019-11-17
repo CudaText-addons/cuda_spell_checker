@@ -62,7 +62,7 @@ class tokenize(enchant.tokenize.tokenize):
 
     _DOC_ERRORS = ["pos","pos"]
     
-    def __init__(self,text,valid_chars=("'",)):
+    def __init__(self,text,valid_chars=None):
         self._valid_chars = valid_chars
         self._text = text
         self._offset = 0
@@ -75,12 +75,26 @@ class tokenize(enchant.tokenize.tokenize):
         try:
             char1 = text[0]
         except IndexError:
-            self._consume_alpha = self._consume_alpha_b
+            self._initialize_for_binary()
         else:
             if isinstance(char1,unicode):
-                self._consume_alpha = self._consume_alpha_u
+                self._initialize_for_unicode()
             else:
-                self._consume_alpha = self._consume_alpha_b
+                self._initialize_for_binary()
+
+    def _initialize_for_binary(self):
+        self._consume_alpha = self._consume_alpha_b
+        if self._valid_chars is None:
+            self._valid_chars = ("'",)
+
+    def _initialize_for_unicode(self):
+        self._consume_alpha = self._consume_alpha_u
+        if self._valid_chars is None:
+            # XXX TODO: this doesn't seem to work correctly with the
+            # MySpell provider, disabling for now.
+            # Allow unicode typographic apostrophe
+            #self._valid_chars = (u"'",u"\u2019")
+            self._valid_chars = (u"'",)
     
     def _consume_alpha_b(self,text,offset):
         """Consume an alphabetic character from the given bytestring.
@@ -161,7 +175,7 @@ class tokenize(enchant.tokenize.tokenize):
                     else:
                         break
                 offset += incr
-            # Return if word isnt empty
+            # Return if word isn't empty
             if(curPos != offset):
                 # Make sure word doesn't end with a valid_char
                 while text[offset-1] in self._valid_chars:

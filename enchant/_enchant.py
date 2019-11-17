@@ -9,7 +9,7 @@
 #
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPsE.  See the GNU
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
@@ -113,10 +113,12 @@ if e is None and sys.platform == "darwin":
   else:
       # Enchant doesn't natively support relocatable binaries on OSX.
       # We fake it by patching the enchant source to expose a char**, which
-      # we can write the runtime path into ourelves.
+      # we can write the runtime path into ourselves.
       e = CDLL(e_path)
       try:
           e_dir = os.path.dirname(os.path.dirname(e_path))
+          if isinstance(e_dir,unicode):
+              e_dir = e_dir.encode(sys.getfilesystemencoding())
           prefix_dir = POINTER(c_char_p).in_dll(e,"enchant_prefix_dir_p")
           prefix_dir.contents = c_char_p(e_dir)
       except AttributeError:
@@ -306,12 +308,6 @@ dict_is_removed1.argtypes = [t_dict,c_char_p,c_size_t]
 dict_is_removed1.restype = c_int
 def dict_is_removed(dict,word):
     return dict_is_removed1(dict,word,len(word))
-
-dict_is_in_session1 = e.enchant_dict_is_in_session
-dict_is_in_session1.argtypes = [t_dict,c_char_p,c_size_t]
-dict_is_in_session1.restype = c_int
-def dict_is_in_session(dict,word):
-    return dict_is_in_session1(dict,word,len(word))
 
 dict_store_replacement1 = e.enchant_dict_store_replacement
 dict_store_replacement1.argtypes = [t_dict,c_char_p,c_size_t,c_char_p,c_size_t]

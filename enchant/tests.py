@@ -9,7 +9,7 @@
 #
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPsE.  See the GNU
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
@@ -48,9 +48,11 @@ from enchant import _enchant as _e
 from enchant.utils import unicode, raw_unicode, printf, trim_suggestions
 
 
-def runcmd(cmd):
+def runcmd(cmd, **kwds):
     if subprocess is not None:
-        kwds = dict(stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+        kwds["stdout"] = subprocess.PIPE
+        kwds["stderr"] = subprocess.PIPE
+        kwds["shell"] = True
         p = subprocess.Popen(cmd,**kwds)
         (stdout,stderr) = p.communicate()
         if p.returncode:
@@ -130,7 +132,7 @@ class TestBroker(unittest.TestCase):
                 self.assertEqual((d.provider,tag),(prov,tag))
                 del d
                 del b2
-        # Place providers that dont have the language in the ordering
+        # Place providers that don't have the language in the ordering
         for tag in langs:
             for prov in langs[tag]:
                 order = prov.name
@@ -153,9 +155,8 @@ class TestBroker(unittest.TestCase):
         self.assertTrue(d1)
 
     def test_GetSetParam(self):
-        try:
-            self.broker.get_param("pyenchant.unittest")
-        except AttributeError:
+        # Older enchnt versions do not have these functions.
+        if not hasattr(_e.broker_get_param,"argtypes"):
             return
         self.assertEqual(self.broker.get_param("pyenchant.unittest"),None)
         self.broker.set_param("pyenchant.unittest","testing")
@@ -185,6 +186,7 @@ class TestDict(unittest.TestCase):
         self.assertTrue(self.dict.check("test"))
         self.assertFalse(self.dict.check("helo"))
         self.assertFalse(self.dict.check("testt"))
+        self.assertRaises(ValueError, self.dict.check, "")
         
     def test_broker(self):
         """Test that the dict's broker is set correctly."""
@@ -198,6 +200,7 @@ class TestDict(unittest.TestCase):
         """Test that suggest() gets simple suggestions right."""
         self.assertTrue(self.dict.check("hello"))
         self.assertTrue("hello" in self.dict.suggest("helo"))
+        self.assertRaises(ValueError, self.dict.suggest, "")
 
     def test_suggestHang1(self):
         """Test whether suggest() hangs on some inputs (Bug #1404196)"""
@@ -250,7 +253,7 @@ class TestDict(unittest.TestCase):
         """Test behaviour of default language selection."""
         defLang = utils.get_default_language()
         if defLang is None:
-            # If no default language, shouldnt work
+            # If no default language, shouldn't work
             self.assertRaises(Error,Dict)
         else:
             # If there is a default language, should use it
@@ -262,7 +265,7 @@ class TestDict(unittest.TestCase):
                 pass
 
     def test_pickling(self):
-        """Test that pickling doensn't corrupt internal state."""
+        """Test that pickling doesn't corrupt internal state."""
         d1 = Dict("en")
         self.assertTrue(d1.check("hello"))
         d2 = pickle.loads(pickle.dumps(d1))
@@ -413,12 +416,12 @@ class TestUtils(unittest.TestCase):
     def test_trim_suggestions(self):
         word = "gud"
         suggs = ["good","god","bad+"]
-        self.assertEquals(trim_suggestions(word,suggs,40),["god","good","bad+"])
-        self.assertEquals(trim_suggestions(word,suggs,4),["god","good","bad+"])
-        self.assertEquals(trim_suggestions(word,suggs,3),["god","good","bad+"])
-        self.assertEquals(trim_suggestions(word,suggs,2),["god","good"])
-        self.assertEquals(trim_suggestions(word,suggs,1),["god"])
-        self.assertEquals(trim_suggestions(word,suggs,0),[])
+        self.assertEqual(trim_suggestions(word,suggs,40),["god","good","bad+"])
+        self.assertEqual(trim_suggestions(word,suggs,4),["god","good","bad+"])
+        self.assertEqual(trim_suggestions(word,suggs,3),["god","good","bad+"])
+        self.assertEqual(trim_suggestions(word,suggs,2),["god","good"])
+        self.assertEqual(trim_suggestions(word,suggs,1),["god"])
+        self.assertEqual(trim_suggestions(word,suggs,0),[])
 
 
 class TestDocStrings(unittest.TestCase):
@@ -436,7 +439,7 @@ class TestDocStrings(unittest.TestCase):
              "spellchecker","dialog","urls","wikiwords","enchantobject",
              "providerdesc", "spellcheck", "pwl", "aspell", "myspell",
              "docstring", "docstrings", "stopiteration", "pwls","pypwl",
-             "dictwithpwl","skippable","dicts","dict's","filenames",
+             "dictwithpwl","skippable","dicts","dict's","filenames","fr",
              "trie","api","ctypes","wxspellcheckerdialog","stateful",
              "cmdlinechecker","spellchecks","callback","clunkier","iterator",
              "ispell","cor","backends","subclasses","initialise","runtime"]
@@ -533,8 +536,11 @@ class TestInstallEnv(unittest.TestCase):
         if str is not unicode and isinstance(insdir,unicode):
             insdir = insdir.encode(sys.getfilesystemencoding())
         os.environ["PYTHONPATH"] = insdir
-        script = os.path.join(insdir,"enchant","__init__.py")
-        res = runcmd("\"%s\" %s" % (sys.executable,script,))
+        testCmd = "import enchant, os; " \
+                  "from os.path import abspath; " \
+                  "assert abspath(os.curdir) in abspath(enchant.__file__); " \
+                  "enchant._runtestsuite()"
+        res = runcmd("\"%s\" -c \"%s\"" % (sys.executable, testCmd), cwd=insdir)
         self.assertEqual(res,0)
 
     def test_basic(self):

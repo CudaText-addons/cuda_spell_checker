@@ -76,7 +76,7 @@ be at least partially suitable for other languages.
 
 This module also provides various implementations of "Chunkers" and
 "Filters".  These classes are designed to make it easy to work with
-text in a vareity of common formats, by detecting and excluding parts
+text in a variety of common formats, by detecting and excluding parts
 of the text that don't need to be checked.
 
 A Chunker is a class designed to break a body of text into large chunks
@@ -86,11 +86,11 @@ A Filter is a class designed to skip individual words during the checking
 process; for example the URLFilter class skips over any words that
 have the format of a URL.
 
-For exmaple, to spellcheck an HTML document it is necessary to split the
+For example, to spellcheck an HTML document it is necessary to split the
 text into chunks based on HTML tags, and to filter out common word forms
 such as URLs and WikiWords.  This would look something like the following::
 
-    tknzr = get_tokenier("en_US",(HTMLChunker,),(URLFilter,WikiWordFilter)))
+    tknzr = get_tokenizer("en_US",(HTMLChunker,),(URLFilter,WikiWordFilter)))
 
     text = "<html><body>the url is http://example.com</body></html>"
     for (word,pos) in tknzer(text):
@@ -108,7 +108,7 @@ import enchant
 from enchant.utils import next, xrange
 from enchant.errors import *
 
-#  For backwards-compatability.  This will eventually be removed, but how
+#  For backwards-compatibility.  This will eventually be removed, but how
 #  does one mark a module-level constant as deprecated?
 Error = TokenizerNotFoundError
 
@@ -166,7 +166,7 @@ def get_tokenizer(tag=None,chunkers=None,filters=None):
     If a suitable function cannot be found, raises TokenizerNotFoundError.
     
     If given and not None, 'chunkers' and 'filters' must be lists of chunker
-    classes and filter classes resectively.  These will be applied to the
+    classes and filter classes respectively.  These will be applied to the
     tokenizer during creation.
     """
     if tag is None:
@@ -276,7 +276,7 @@ class basic_tokenize(tokenize):
                 sPos += 1
             while 0 < ePos and text[ePos-1] in self.strip_from_end:
                     ePos -= 1
-            # Return if word isnt empty
+            # Return if word isn't empty
             if(sPos < ePos):
                 return (text[sPos:ePos],sPos)
         raise StopIteration()
@@ -395,17 +395,17 @@ class Filter(object):
         def next(self):
             # Try to get the next sub-token from word currently being split.
             # If unavailable, move on to the next word and try again.
-            try:
-                (word,pos) = next(self._curtok)
-                return (word,pos + self._curpos)
-            except StopIteration:
-                (word,pos) = next(self._tokenizer)
-                while self._skip(self._to_string(word)):
+            while True:
+                try:
+                    (word,pos) = next(self._curtok)
+                    return (word,pos + self._curpos)
+                except StopIteration:
                     (word,pos) = next(self._tokenizer)
-                self._curword = word
-                self._curpos = pos
-                self._curtok = self._split(word)
-                return self.next()
+                    while self._skip(self._to_string(word)):
+                        (word,pos) = next(self._tokenizer)
+                    self._curword = word
+                    self._curpos = pos
+                    self._curtok = self._split(word)
 
         def _to_string(self, word):
             if type(word) is array.array:
@@ -449,22 +449,22 @@ class Filter(object):
 #  Pre-defined chunkers and filters start here
 
 class URLFilter(Filter):
-    """Filter skipping over URLs.
+    r"""Filter skipping over URLs.
     This filter skips any words matching the following regular expression:
        
-           ^[a-zA-z]+:\/\/[^\s].*
+           ^[a-zA-Z]+:\/\/[^\s].*
         
     That is, any words that are URLs.
     """
     _DOC_ERRORS = ["zA"]
-    _pattern = re.compile(r"^[a-zA-z]+:\/\/[^\s].*")
+    _pattern = re.compile(r"^[a-zA-Z]+:\/\/[^\s].*")
     def _skip(self,word):
         if self._pattern.match(word):
             return True
         return False
 
 class WikiWordFilter(Filter):
-    """Filter skipping over WikiWords.
+    r"""Filter skipping over WikiWords.
     This filter skips any words matching the following regular expression:
        
            ^([A-Z]\w+[A-Z]+\w+)
@@ -478,7 +478,7 @@ class WikiWordFilter(Filter):
         return False
 
 class EmailFilter(Filter):
-    """Filter skipping over email addresses.
+    r"""Filter skipping over email addresses.
     This filter skips any words matching the following regular expression:
        
            ^.+@[^\.].*\.[a-z]{2,}$
@@ -486,6 +486,36 @@ class EmailFilter(Filter):
     That is, any words that resemble email addresses.
     """
     _pattern = re.compile(r"^.+@[^\.].*\.[a-z]{2,}$")
+    def _skip(self,word):
+        if self._pattern.match(word):
+            return True
+        return False
+
+class MentionFilter(Filter):
+    r"""Filter skipping over @mention.
+    This filter skips any words matching the following regular expression:
+       
+           (\A|\s)@(\w+)
+        
+    That is, any words that are @mention.
+    """
+    _DOC_ERRORS = ["zA"]
+    _pattern = re.compile(r"(\A|\s)@(\w+)")
+    def _skip(self,word):
+        if self._pattern.match(word):
+            return True
+        return False
+
+class HashtagFilter(Filter):
+    r"""Filter skipping over #hashtag.
+    This filter skips any words matching the following regular expression:
+       
+           (\A|\s)#(\w+)
+        
+    That is, any words that are #hashtag.
+    """
+    _DOC_ERRORS = ["zA"]
+    _pattern = re.compile(r"(\A|\s)#(\w+)")
     def _skip(self,word):
         if self._pattern.match(word):
             return True
@@ -525,7 +555,7 @@ class HTMLChunker(Chunker):
                 offset += 1
             ePos = offset
             self._offset = offset
-            # Return if chunk isnt empty
+            # Return if chunk isn't empty
             if(sPos < offset):
                 return (text[sPos:offset],sPos)
         raise StopIteration()
