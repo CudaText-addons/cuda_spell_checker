@@ -201,7 +201,7 @@ def do_work(with_dialog=False):
 
     if not is_selection:
         y1 = 0
-        y2 = ed.get_line_count()-1
+        y2 = total_lines-1
         lines = ed.get_text_all().split('\n')
     else:
         if y1>y2:
