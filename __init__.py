@@ -193,7 +193,7 @@ def do_work(with_dialog=False):
     count_replace = 0
     total_lines = ed.get_line_count()
     percent = 0
-    app_proc(PROC_SET_ESCAPE, '0')
+    app_proc(PROC_SET_ESCAPE, False)
 
     caret_pos = ed.get_carets()[0]
     x1, y1, x2, y2 = caret_pos
@@ -211,16 +211,18 @@ def do_work(with_dialog=False):
     chk_tokens = need_check_tokens(ed)
 
     for nline in range(y1, y2+1):
+        '''
         percent_new = nline * 100 // total_lines
         if percent_new!=percent:
             percent = percent_new
             msg_status('Spell-checking %d%%'% percent)
             if app_proc(PROC_GET_ESCAPE, ''):
-                app_proc(PROC_SET_ESCAPE, '0')
+                app_proc(PROC_SET_ESCAPE, False)
                 if not op_confirm_esc or \
                   msg_box('Stop spell-checking?', MB_OKCANCEL+MB_ICONQUESTION)==ID_OK:
                     msg_status('Spell-check stopped')
                     return
+        '''
 
         res = do_check_line(ed, 
             nline,

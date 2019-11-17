@@ -1,4 +1,8 @@
 
+2019.11.18
++ optimized speed
+* don't handle Esc press during check, it's faster
+
 2019.10.31
 + used API of CudaText 1.89 to place many marks at once
 
