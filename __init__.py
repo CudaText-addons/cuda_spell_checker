@@ -111,14 +111,13 @@ def is_filetype_ok(fn):
     return ','+fn+',' in ','+op_file_types+','
 
 
-def do_check_line(ed, nline, pos_from, pos_to,
+def do_check_line(ed, nline,
     with_dialog,
     count_all, count_replace,
     res_x, res_y, res_n):
-    """Checks one line, pos_from...pos_to"""
 
     line = ed.get_text_line(nline)
-    n1 = pos_from-1
+    n1 = -1
 
     lexer = ed.get_prop(PROP_LEXER_FILE)
     if lexer:
@@ -130,7 +129,6 @@ def do_check_line(ed, nline, pos_from, pos_to,
     while True:
         n1 += 1
         if n1>=len(line): break
-        if n1>pos_to: break
         if not is_word_char(line[n1]): continue
         n2 = n1+1
         while n2<len(line) and is_word_char(line[n2]): n2+=1
@@ -198,13 +196,11 @@ def do_work(with_dialog=False):
     x1, y1, x2, y2 = caret_pos
     is_selection = y2>=0
     if not is_selection:
-        x1 = 0
         y1 = 0
-        x2 = 0xFFFFFF
         y2 = ed.get_line_count()-1
     else:
-        if (y1>y2) or (y1==y2 and x1>x2):
-            x1, y1, x2, y2 = x2, y2, x1, y1
+        if y1>y2:
+            y1, y2 = y2, y1
 
     for nline in range(y1, y2+1):
         percent_new = nline * 100 // total_lines
@@ -218,11 +214,7 @@ def do_work(with_dialog=False):
                     msg_status('Spell-check stopped')
                     return
 
-        local_from = 0 if nline!=y1 else x1
-        local_to = 0xFFFFFF if nline!=y2 else x2
-
         res = do_check_line(ed, nline,
-            local_from, local_to,
             with_dialog,
             count_all, count_replace,
             res_x, res_y, res_n)
