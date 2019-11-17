@@ -121,13 +121,12 @@ def need_check_tokens(ed):
         return False
 
 
-def do_check_line(ed, nline,
+def do_check_line(ed, nline, line,
     with_dialog,
     check_tokens,
     count_all, count_replace,
     res_x, res_y, res_n):
 
-    line = ed.get_text_line(nline)
     n1 = -1
 
     while True:
@@ -199,12 +198,15 @@ def do_work(with_dialog=False):
     caret_pos = ed.get_carets()[0]
     x1, y1, x2, y2 = caret_pos
     is_selection = y2>=0
+
     if not is_selection:
         y1 = 0
         y2 = ed.get_line_count()-1
+        lines = ed.get_text_all().split('\n')
     else:
         if y1>y2:
             y1, y2 = y2, y1
+        lines = ed.get_text_substr(0, y1, 0, y2+1).split('\n')
 
     chk_tokens = need_check_tokens(ed)
 
@@ -220,7 +222,9 @@ def do_work(with_dialog=False):
                     msg_status('Spell-check stopped')
                     return
 
-        res = do_check_line(ed, nline,
+        res = do_check_line(ed, 
+            nline,
+            lines[nline-y1],
             with_dialog,
             chk_tokens,
             count_all, count_replace,
