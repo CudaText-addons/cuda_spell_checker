@@ -1,8 +1,10 @@
 # coding: utf8
+import importlib
 import os
 import sys
 import string
 import json
+from .enchant_architecture import EnchantArchitecture
 from .jsoncomment import JsonComment
 from cudatext import *
 
@@ -11,6 +13,7 @@ json_parser = JsonComment(json)
 def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s=='1'
 
+
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
@@ -18,9 +21,16 @@ op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
 op_confirm_esc = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key', '0'))
 op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
 
+# On Windows expand PATH environment variable so that enchant can find its backend DLLs
+if sys.platform == "win32":
+    os.environ["PATH"] = os.environ["PATH"] + ";" + os.path.join(os.path.dirname(__file__), EnchantArchitecture())
+    os.environ["PATH"] = os.environ["PATH"] + ";" + os.path.join(os.path.join(os.path.join(os.path.dirname(__file__), EnchantArchitecture()), "lib"), "enchant")
+
 sys.path.append(os.path.dirname(__file__))
+
 try:
-    import enchant
+    enchant = importlib.import_module(EnchantArchitecture())
+    #import enchant
     dict_obj = enchant.Dict(op_lang)
 except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
@@ -303,7 +313,7 @@ def do_work_word(with_dialog):
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
     if not m: return
-    m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4) in m if tag==MARKTAG]
+    m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4, som, mo) in m if tag==MARKTAG]
     if not m: return
 
     if is_next:

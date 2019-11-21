@@ -1,4 +1,7 @@
 
+2019.11.21
++ added support for Windows 64 bit
+
 2019.11.18
 + optimized speed
 * don't handle Esc press during check, it's faster
