@@ -2,8 +2,7 @@ Plugin for CudaText.
 Gives spell checking by using Enchant/PyEnchant libraries.
 Misspelled words are highlighted with red underlines.
 
-- Windows 32-bit: supported, binary DLL files shipped with plugin
-- Windows 64-bit: not supported yet (missed x64 DLLs)
+- Windows 32-bit and 64-bit: supported, binary DLL files shipped with plugin
 - Unix: supported, but you must install Enchant binary files (using OS package manager)
 
 Uses Hunspell dictionaries.
@@ -11,7 +10,8 @@ It's possible to install additional dictionaries:
 https://github.com/titoBouzout/Dictionaries
 Rename to short names: Russian.* to ru.* or ru_RU.*
 Copy into folder:
-    - on Windows: [CudaText_dir]\py\cuda_spell_checker\enchant\share\enchant\myspell\
+    - on Windows (32 bit CudaText): [CudaText_dir]\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
+                 (64 bit CudaText): [CudaText_dir]\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
     - on Unix: ~/.enchant/myspell/
 
 ------------------------------
