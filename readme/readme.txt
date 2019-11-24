@@ -67,7 +67,6 @@ Note: file install.inf is overwritten on each plugin update/installation.
 Plugin have several options in ini-file, call command "Options / Settings-plugins / Spell Checker / Config".
 Options:
     - "lang": current language which user chose in "Select language" command
-    - "underline_color": color of misspelled word underlines, in HTML form
     - "underline_style" (0..6): style of line below words
     - "confirm_esc_key" (0/1): allows to show confirmation when user presses Esc during long checking
     - "file_extension_list": which files to check with option "Enable checking after text editing":
