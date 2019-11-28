@@ -21,15 +21,17 @@ op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
 op_confirm_esc = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key', '0'))
 op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
 
-# On Windows expand PATH environment variable so that enchant can find its backend DLLs
-if sys.platform == "win32":
-    os.environ["PATH"] = os.environ["PATH"] + ";" + os.path.join(os.path.dirname(__file__), EnchantArchitecture())
-    os.environ["PATH"] = os.environ["PATH"] + ";" + os.path.join(os.path.join(os.path.join(os.path.dirname(__file__), EnchantArchitecture()), "lib"), "enchant")
+_mydir = os.path.dirname(__file__)
+_ench = EnchantArchitecture()
 
-sys.path.append(os.path.dirname(__file__))
+# On Windows expand PATH environment variable so that Enchant can find its backend DLLs
+if os.name == "nt":
+    os.environ["PATH"] += ";" + os.path.join(_mydir, _ench) + ";" + os.path.join(_mydir, _ench, "lib", "enchant")
+
+sys.path.append(_mydir)
 
 try:
-    enchant = importlib.import_module(EnchantArchitecture())
+    enchant = importlib.import_module(_ench)
     #import enchant
     dict_obj = enchant.Dict(op_lang)
 except Exception as ex:
@@ -402,7 +404,7 @@ class Command:
         do_work()
 
     def toggle_on_open(self):
-        fn = os.path.join(os.path.dirname(__file__), 'install.inf')
+        fn = os.path.join(_mydir, 'install.inf')
         v = ini_read(fn, 'item1', 'events', '')
         if not v:
             v = 'on_open'

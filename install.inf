@@ -4,7 +4,6 @@ desc=Spell checker, based on Hunspell dictionaries. Shows red underlines for mis
 type=cudatext-plugin
 subdir=cuda_spell_checker
 homepage=https://github.com/CudaText-addons/cuda_spell_checker
-os=win,linux,macos,freebsd
 api=1.0.310
 
 [item1]
