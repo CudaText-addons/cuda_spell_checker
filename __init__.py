@@ -218,7 +218,7 @@ def do_work(with_dialog=False):
     else:
         if y1>y2:
             y1, y2 = y2, y1
-        lines = ed.get_text_substr(0, y1, 0, y2+1).split('\n')
+        lines = [ed.get_text_line(i) for i in range(y1, y2+1)]
 
     chk_tokens = need_check_tokens(ed)
 
