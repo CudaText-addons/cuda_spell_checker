@@ -207,8 +207,9 @@ def do_work(with_dialog=False):
     percent = 0
     app_proc(PROC_SET_ESCAPE, False)
 
-    caret_pos = ed.get_carets()[0]
-    x1, y1, x2, y2 = caret_pos
+    carets = ed.get_carets()
+    if not carets: return
+    x1, y1, x2, y2 = carets[0]
     is_selection = y2>=0
 
     if not is_selection:
@@ -236,7 +237,7 @@ def do_work(with_dialog=False):
                     return
         '''
 
-        res = do_check_line(ed, 
+        res = do_check_line(ed,
             nline,
             lines[nline-y1],
             with_dialog,
@@ -255,9 +256,17 @@ def do_work(with_dialog=False):
         int(op_underline_style),
         show_on_map=True)
 
-    msg_sel = 'sel only' if is_selection else 'all text'
+    msg_sel = 'selection only' if is_selection else 'all text'
     msg_status('Spell check: %s, %s, %d mistake(s), %d replace(s)' % (op_lang, msg_sel, count_all, count_replace))
-    ed.set_caret(caret_pos[0], caret_pos[1])
+
+    if len(carets)==1:
+        c = carets[0]
+        ed.set_caret(*c)
+    else:
+        c = carets[0]
+        ed.set_caret(*c)
+        for c in carets[1:]:
+            ed.set_caret(*c, CARET_ADD)
 
 
 def do_work_if_name(ed_self):
