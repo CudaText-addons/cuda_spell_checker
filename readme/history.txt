@@ -1,4 +1,8 @@
 
+2020.04.08
+- fix: error on checking with selected-all
+- fix: deleted carets on autocheck with multi-carets
+
 2019.11.21
 + added support for Windows 64 bit
 
