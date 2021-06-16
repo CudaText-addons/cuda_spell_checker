@@ -106,7 +106,7 @@ def dlg_select_dict():
         focused = items.index(op_lang)
     else:
         focused = -1
-    res = dlg_menu(MENU_LIST, '\n'.join(items), focused)
+    res = dlg_menu(DMENU_LIST, items, focused, caption='Select dictionary')
     if res is None: return
     return items[res]
 
