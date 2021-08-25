@@ -260,7 +260,7 @@ def do_work(with_dialog=False):
         show_on_map=True)
 
     msg_sel = _('selection only') if is_selection else _('all text')
-    msg_status(f(_('Spell check: {}, {}, {} mistake(s), {} replace(s)'), op_lang, msg_sel, count_all, count_replace))
+    msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace))
 
     if len(carets)==1:
         c = carets[0]
@@ -343,7 +343,7 @@ def do_goto(is_next):
     m = get_next_pos(x1, y1, is_next)
     if m:
         ed.set_caret(m[0], m[1])
-        msg_status(f(_('Go to misspelled: {}:{}'), m[1]+1, m[0]+1))
+        msg_status(_('Go to misspelled: {}:{}').format(m[1]+1, m[0]+1))
     else:
         msg_status(_('Cannot go to next/prev'))
 
