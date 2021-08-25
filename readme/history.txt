@@ -1,5 +1,6 @@
 
 2021.08.25
++ add: i18n (patch from Markus)
 - fix: Enchant C++ lib could not be loaded on some Linux systems (patch from @pablorq)
 
 2020.04.08
