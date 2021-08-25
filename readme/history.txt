@@ -1,4 +1,7 @@
 
+2021.08.25
+- fix: Enchant C++ lib could not be loaded on some Linux systems (patch from @pablorq)
+
 2020.04.08
 - fix: error on checking with selected-all
 - fix: deleted carets on autocheck with multi-carets
