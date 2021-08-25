@@ -1,4 +1,4 @@
-# coding: utf8
+# coding: utf-8
 import importlib
 import os
 import sys
@@ -7,6 +7,9 @@ import json
 from .enchant_architecture import EnchantArchitecture
 from .jsoncomment import JsonComment
 from cudatext import *
+
+from cudax_lib import get_translation
+_ = get_translation(__file__)  # I18N
 
 json_parser = JsonComment(json)
 
@@ -66,17 +69,17 @@ def dlg_spell(sub):
     RES_BTN_ADD = 8
     RES_BTN_CANCEL = 9
 
-    res = dlg_custom('Misspelled word', 426, 306, '\n'.join([]
-        +[c1.join(['type=label', 'pos=6,8,100,0', 'cap=Not found:'])]
+    res = dlg_custom(_('Misspelled word'), 426, 306, '\n'.join([]
+        +[c1.join(['type=label', 'pos=6,8,100,0', 'cap='+_('Not found:')])]
         +[c1.join(['type=edit', 'pos=106,6,300,0', 'cap='+sub, 'ex0=1', 'ex1=0', 'ex2=1'])]
-        +[c1.join(['type=label', 'pos=6,38,100,0', 'cap=C&ustom text:'])]
+        +[c1.join(['type=label', 'pos=6,38,100,0', 'cap='+_('C&ustom text:')])]
         +[c1.join(['type=edit', 'pos=106,36,300,0', 'val='])]
-        +[c1.join(['type=label', 'pos=6,68,100,0', 'cap=Su&ggestions:'])]
+        +[c1.join(['type=label', 'pos=6,68,100,0', 'cap='+_('Su&ggestions:')])]
         +[c1.join(['type=listbox', 'pos=106,66,300,300', 'items='+'\t'.join(rep_list), 'val='+('0' if en_list else '-1')])]
-        +[c1.join(['type=button', 'pos=306,66,420,0', 'cap=&Ignore', 'ex0=1'])]
-        +[c1.join(['type=button', 'pos=306,96,420,0', 'cap=&Change'])]
-        +[c1.join(['type=button', 'pos=306,126,420,0', 'cap=&Add'])]
-        +[c1.join(['type=button', 'pos=306,186,420,0', 'cap=Cancel'])]
+        +[c1.join(['type=button', 'pos=306,66,420,0', 'cap='+_('&Ignore'), 'ex0=1'])]
+        +[c1.join(['type=button', 'pos=306,96,420,0', 'cap='+_('&Change')])]
+        +[c1.join(['type=button', 'pos=306,126,420,0', 'cap='+_('&Add')])]
+        +[c1.join(['type=button', 'pos=306,186,420,0', 'cap='+_('Cancel')])]
         ), 3, get_dict=True)
 
     if res is None: return
@@ -106,7 +109,7 @@ def dlg_select_dict():
         focused = items.index(op_lang)
     else:
         focused = -1
-    res = dlg_menu(DMENU_LIST, items, focused, caption='Select dictionary')
+    res = dlg_menu(DMENU_LIST, items, focused, caption=_('Select dictionary'))
     if res is None: return
     return items[res]
 
@@ -256,8 +259,8 @@ def do_work(with_dialog=False):
         int(op_underline_style),
         show_on_map=True)
 
-    msg_sel = 'selection only' if is_selection else 'all text'
-    msg_status('Spell check: %s, %s, %d mistake(s), %d replace(s)' % (op_lang, msg_sel, count_all, count_replace))
+    msg_sel = _('selection only') if is_selection else _('all text')
+    msg_status(f(_('Spell check: {}, {}, {} mistake(s), {} replace(s)'), op_lang, msg_sel, count_all, count_replace))
 
     if len(carets)==1:
         c = carets[0]
@@ -284,7 +287,7 @@ def do_work_word(with_dialog):
     if not line: return
 
     if not (0 <= x < len(line)) or not is_word_char(line[x]):
-        msg_status('Caret not on word-char')
+        msg_status(_('Caret not on word-char'))
         return
 
     n1 = x
@@ -295,14 +298,14 @@ def do_work_word(with_dialog):
 
     sub = line[n1:n2+1]
     if not is_word_alpha(sub):
-        msg_status('Not text-word under caret')
+        msg_status(_('Not text-word under caret'))
         return
 
     if dict_obj.check(sub):
-        msg_status('Word ok: "%s"' % sub)
+        msg_status(_('Word ok: "%s"') % sub)
         return
 
-    msg_status('Word misspelled: "%s"' % sub)
+    msg_status(_('Word misspelled: "%s"') % sub)
     if with_dialog:
         ed.set_caret(x, y, x+len(sub), y)
         rep = dlg_spell(sub)
@@ -340,9 +343,9 @@ def do_goto(is_next):
     m = get_next_pos(x1, y1, is_next)
     if m:
         ed.set_caret(m[0], m[1])
-        msg_status('Go to misspelled: %d:%d' % (m[1]+1, m[0]+1))
+        msg_status(f(_('Go to misspelled: {}:{}'), m[1]+1, m[0]+1))
     else:
-        msg_status('Cannot go to next/prev')
+        msg_status(_('Cannot go to next/prev'))
 
 
 
@@ -374,7 +377,7 @@ class Command:
             ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
         app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')
 
-        text = 'Underlines on' if self.active else 'Underlines off'
+        text = _('Underlines on') if self.active else _('Underlines off')
         msg_status(text)
 
     def select_dict(self):
@@ -420,9 +423,9 @@ class Command:
         else:
             v = ''
         ini_write(fn, 'item1', 'events', v)
-        msg_box('To not slow down CudaText when setting is Off, plugin saves this setting to install.inf file. '+
-                'So you need to re-enable this setting each time you update Spell Checker plugin. '+
-                'Setting will take effect after CudaText restart.',
+        msg_box(_('To not slow down CudaText when setting is Off, plugin saves this setting to install.inf file. '
+                'So you need to re-enable this setting each time you update Spell Checker plugin. '
+                'Setting will take effect after CudaText restart.'),
                 MB_OK+MB_ICONINFO)
 
     def del_marks(self):
