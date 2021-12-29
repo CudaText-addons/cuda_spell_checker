@@ -2,16 +2,16 @@ Plugin for CudaText.
 Gives spell checking by using Enchant/PyEnchant libraries.
 Misspelled words are highlighted with red underlines.
 
-- Windows 32-bit and 64-bit: supported, binary DLL files shipped with plugin
-- Unix: supported, but you must install Enchant binary files (using OS package manager)
+- Windows 32-bit and 64-bit are supported, binary DLL files are shipped with plugin.
+- Linux and other Unixes are supported, but you must install Enchant binary files, using OS package manager.
 
 Uses Hunspell dictionaries.
 It's possible to install additional dictionaries:
 https://github.com/titoBouzout/Dictionaries
 Rename to short names: Russian.* to ru.* or ru_RU.*
-Copy into folder:
-    - on Windows (32 bit CudaText): [CudaText_dir]\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
-                 (64 bit CudaText): [CudaText_dir]\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
+Copy to folder:
+    - on Windows (32-bit CudaText): CudaText\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
+                 (64-bit CudaText): CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
     - on Unix: ~/.enchant/myspell/
 
 ------------------------------
@@ -35,10 +35,10 @@ Use commands in "Options / Settings-plugins / Spell Checker" menu:
       This pause can be changed in CudaText config user.json. See option "py_change_slow".
 
 Spell checker confirmation dialog buttons:
-    - Ignore: skip word
-    - Change: replace word in editor, from dialog input box or selected listbox item
-    - Add: skip word and add it to a user dictionary for future
-    - Cancel: stop all work
+    - "Ignore": skip word
+    - "Change": replace word in editor, from dialog input box or selected listbox item
+    - "Add": skip word and add it to a user dictionary for future
+    - "Cancel": stop all work
 
 ------------------------------
 
@@ -64,16 +64,26 @@ Note: file install.inf is overwritten on each plugin update/installation.
 
 ------------------------------
 
-Plugin have several options in ini-file, call command "Options / Settings-plugins / Spell Checker / Config".
-Options:
-    - "lang": current language which user chose in "Select language" command
-    - "underline_style" (0..6): style of line below words
-    - "confirm_esc_key" (0/1): allows to show confirmation when user presses Esc during long checking
-    - "file_extension_list": which files to check with option "Enable checking after text editing":
-        - "" (empty): disable on all files
-        - "*": enable on all files
-        - comma-separated list like "ext1,ext2,ext3": these extensions will be checked
+Personal word lists.
+If you press "Add" button in the spell checker dialog, highlighted word will be added to the personal word list. This is text file which you can edit or delete. Location:
 
+    - Windows: CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\*.dic
+    - Linux: ~/.config/enchant/*.dic
+
+------------------------------
+
+Plugin has several options in ini-file, call command "Options / Settings-plugins / Spell Checker / Config".
+Options:
+
+- "lang": current language which user chose in "Select language" command
+- "underline_style" (0..6): style of line below words
+- "confirm_esc_key" (0/1): allows to show confirmation when user presses Esc during long checking
+- "file_extension_list": which files to check with option "Enable checking after text editing":
+    - "" (empty): disable on all files
+    - "*": enable on all files
+    - comma-separated list like "ext1,ext2,ext3": these extensions will be checked
+
+------------------------------
 
 Author: Alexey Torgashin (CudaText)
 License: MIT
