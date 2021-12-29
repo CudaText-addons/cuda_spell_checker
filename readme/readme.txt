@@ -67,7 +67,7 @@ Note: file install.inf is overwritten on each plugin update/installation.
 Personal word lists.
 If you press "Add" button in the spell checker dialog, highlighted word will be added to the personal word list. This is text file which you can edit or delete. Location:
 
-    - Windows: CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\*.dic
+    - Windows: C:\Users\username\AppData\Local\enchant\*.dic
     - Linux: ~/.config/enchant/*.dic
 
 ------------------------------
