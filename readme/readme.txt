@@ -42,7 +42,7 @@ Use commands in "Options / Settings-plugins / Spell Checker" menu:
 
 - "Enable/disable checking after text editing": Enable/disable checking after every change of text,
   after 2 second pause (pause after last change of text, so you must stop typing the text and wait).
-  This pause can be changed in CudaText config user.json. See option "py_change_slow".
+  This pause can be changed in CudaText config user.json, it is the option "py_change_slow".
 
 
 Confirmation dialog buttons
@@ -71,6 +71,8 @@ you need to copy/update this file to the CudaText folder "data/lexlib".
 
 2)
 You can enable permanent checking after a) file opening, b) text editing.
+See the topic above in this readme-file, about menu "Options / Settings-plugins / Spell Checker",
+you can do changes from that menu too, it is the same as editing file install.inf by hands.
 
 2a) For file opening.
 Use API event "on_open", write it to file "py/cuda_spell_checker/install.inf" like this:
