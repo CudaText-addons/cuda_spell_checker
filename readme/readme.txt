@@ -6,21 +6,23 @@ Misspelled words are highlighted with red underlines.
 - Linux and other Unixes are supported, but you must install Enchant binary files,
   using OS package manager.
 
-Dictionaries
-============
+
+Additional dictionaries
+=======================
 
 Plugin uses Hunspell dictionaries.
 It's possible to install additional dictionaries:
 https://github.com/titoBouzout/Dictionaries
 Rename files to short names, e.g. Russian.* to ru.* or ru_RU.*
 Copy files to folder:
-- on Windows (32-bit CudaText): CudaText\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
-             (64-bit CudaText): CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
+- on Windows:
+  32-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
+  64-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
 - on Unix: ~/.enchant/myspell/
 
 
-Usage
-=====
+Menu items
+==========
 
 Use commands in "Plugins" menu:
 
@@ -46,24 +48,26 @@ Use commands in "Options / Settings-plugins / Spell Checker" menu:
 Confirmation dialog buttons
 ===========================
 
-- "Ignore": skip the word
-- "Change": replace the word in editor, by suggestion in the dialog input box,
-  or by selected listbox item
-- "Add": skip the word + add it to a user dictionary for future, so the next time
-  this word will automatically skipped
-- "Cancel": stop all the checking this time
+- "Ignore": Skip the word.
+- "Change": Replace the word in editor, by suggestion in the dialog input box,
+  or by selected listbox item.
+- "Add": Skip the word + add it to a user dictionary for future, so the next time
+  this word will be automatically skipped.
+- "Cancel": Stop the checking process.
 
 
 Features
 ========
 
 1)
-For active lexers, not entire text is checked, but only words in "syntax comments"
+When lexer is active, not entire text is checked, but only words in "syntax comments"
 and "syntax strings".
 For none-lexer, entire text is checked.
 To set which lexer styles are "comments" and "strings", you need to edit the lexer in SynWrite.
 Activate the lexer in SynWrite, then open "Lexer Properties" dialog in SynWrite,
 and use "Commenting" tab of the dialog to set these styles.
+SynWrite will save this change to the file "data/lexlib/<lexer>.cuda-lexmap",
+you need to copy/update this file to the CudaText folder "data/lexlib".
 
 2)
 You can enable permanent checking after a) file opening, b) text editing.
