@@ -121,9 +121,11 @@ def is_filetype_ok(fn):
     if fn=='': return True #allow in untitled tabs
     fn = os.path.basename(fn)
     n = fn.rfind('.')
-    if n<0: return True #allow if no extension
-    fn = fn[n+1:]
-    return ','+fn+',' in ','+op_file_types+','
+    if n<0:
+        ext = '-'
+    else:
+        ext = fn[n+1:]
+    return ','+ext+',' in ','+op_file_types+','
 
 
 def need_check_tokens(ed):
@@ -364,6 +366,9 @@ class Command:
     def check_word_suggest(self):
         do_work_word(True)
 
+    def on_open(self, ed_self):
+        do_work_if_name(ed_self)
+
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
 
@@ -411,9 +416,6 @@ class Command:
 
     def goto_prev(self):
         do_goto(False)
-
-    def on_open(self, ed_self):
-        do_work()
 
     def toggle_on_open(self):
         fn = os.path.join(_mydir, 'install.inf')

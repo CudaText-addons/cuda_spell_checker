@@ -1,4 +1,8 @@
 
+2022.01.26
+- fix: on opening files, plugin ignored the setting "file_extension_list"
+* change: to allow checking of files without extension, list item "-" in setting "file_extension_list" 
+
 2021.08.25
 + add: i18n (patch from Markus)
 - fix: Enchant C++ lib could not be loaded on some Linux systems (patch from @pablorq)
