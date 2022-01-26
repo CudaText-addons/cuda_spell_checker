@@ -35,14 +35,10 @@ Use commands in "Plugins" menu:
 Use commands in "Options / Settings-plugins / Spell Checker" menu:
 
 - "Select language": Shows menu-dialog to choose one of installed spelling dictionaries.
-
-- "Enable/disable checking on opening file": This toggles auto-checking after file opening, on/off.
-  This writes option to install.inf file, in "py" folder. So you must re-enable this option
+- "Configure": Edit settings file (in 'Ini files' format).
+- "Configure events": Open dialog to configure events of plugin: on_open and on_change_slow.
+  It writes to file "py/cuda_spell_checker/install.inf". So you must re-configure these settings
   after each plugin update/installation.
-
-- "Enable/disable checking after text editing": Enable/disable checking after every change of text,
-  after 2 second pause (pause after last change of text, so you must stop typing the text and wait).
-  This pause can be changed in CudaText config user.json, it is the option "py_change_slow".
 
 
 Confirmation dialog buttons
