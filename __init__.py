@@ -372,19 +372,6 @@ class Command:
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
 
-    def toggle_hilite(self):
-        self.active = not self.active
-        if self.active:
-            ev = 'on_change_slow'
-            do_work_if_name(ed)
-        else:
-            ev = ''
-            ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
-        app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')
-
-        text = _('Underlines on') if self.active else _('Underlines off')
-        msg_status(text)
-
     def select_dict(self):
         res = dlg_select_dict()
         if res is None: return
@@ -417,18 +404,56 @@ class Command:
     def goto_prev(self):
         do_goto(False)
 
-    def toggle_on_open(self):
-        fn = os.path.join(_mydir, 'install.inf')
-        v = ini_read(fn, 'item1', 'events', '')
-        if not v:
-            v = 'on_open'
-        else:
-            v = ''
-        ini_write(fn, 'item1', 'events', v)
-        msg_box(_('To not slow down CudaText when setting is Off, plugin saves this setting to install.inf file. '
-                'So you need to re-enable this setting each time you update Spell Checker plugin. '
-                'Setting will take effect after CudaText restart.'),
-                MB_OK+MB_ICONINFO)
+    def config_events(self):
+        filename_inf = os.path.join(_mydir, 'install.inf')
+        v = ini_read(filename_inf, 'item1', 'events', '')
+        b_open = ',on_open,' in ','+v+','
+        b_change = ',on_change_slow,' in ','+v+','
+        
+        WARN1 = _('To not slow down CudaText when events are off, plugin saves these settings to install.inf file.')
+        WARN2 = _('So you need to re-configure these options each time you update Spell Checker plugin.')
+        WARN3 = _('Settings will take effect after CudaText restart.')
+        
+        DLG_W = 626
+        DLG_H = 180
+        BTN_W = 80
+        c1 = chr(1)
+
+        res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
+              + [c1.join(['type=check', 'cap='+_('Handle event "on_open" (opening of a file)'), 'pos=6,6,400,0', 'val='+bool_to_str(b_open)])]
+              + [c1.join(['type=check', 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
+              + [c1.join(['type=label', 'cap='+WARN1, 'pos=6,70,500,0'])]
+              + [c1.join(['type=label', 'cap='+WARN2, 'pos=6,90,500,0'])]
+              + [c1.join(['type=label', 'cap='+WARN3, 'pos=6,110,500,0'])]
+              + [c1.join(['type=button', 'cap='+_('&OK'), 'ex0=1', 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)])]
+              + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6, DLG_H-30, DLG_W-6, 0)])]
+              ),
+              get_dict=True )
+        if res is None: return
+          
+        b_open = str_to_bool(res[0])
+        b_change = str_to_bool(res[1])
+        v = []
+        if b_open: v+= ['on_open']
+        if b_change: v+= ['on_change_slow']
+
+        ini_write(filename_inf, 'item1', 'events', ','.join(v))
 
     def del_marks(self):
         ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
+
+    '''
+    def toggle_hilite(self):
+        self.active = not self.active
+        if self.active:
+            ev = 'on_change_slow'
+            do_work_if_name(ed)
+        else:
+            ev = ''
+            ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
+        app_proc(PROC_SET_EVENTS, 'cuda_spell_checker;'+ev+';;')
+
+        text = _('Underlines on') if self.active else _('Underlines off')
+        msg_status(text)
+    '''
+

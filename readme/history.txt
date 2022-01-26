@@ -1,6 +1,7 @@
 
 2022.01.26
 - fix: on opening files, plugin ignored the setting "file_extension_list"
+* change: replaced 2 menu items to configure events - with one command "Configure events" which shows new dialog
 * change: to allow checking of files without extension, list item "-" in setting "file_extension_list" 
 
 2021.08.25
