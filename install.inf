@@ -4,7 +4,6 @@ desc=Spell checker, based on Hunspell dictionaries. Shows red underlines for mis
 type=cudatext-plugin
 subdir=cuda_spell_checker
 homepage=https://github.com/CudaText-addons/cuda_spell_checker
-api=1.0.310
 
 [item1]
 section=events
@@ -56,20 +55,14 @@ caption=Spell Checker\Select language...
 method=select_dict
 menu=o
 
-[item42]
-section=commands
-caption=Spell Checker\Enable/disable checking on opening file
-method=toggle_on_open
-menu=o
-
-[item43]
-section=commands
-caption=Spell Checker\Enable/disable checking after text editing
-method=toggle_hilite
-menu=o
-
 [item45]
 section=commands
-caption=Spell Checker\Config
+caption=Spell Checker\Configure
 method=config
+menu=o
+
+[item46]
+section=commands
+caption=Spell Checker\Configure events...
+method=config_events
 menu=o
