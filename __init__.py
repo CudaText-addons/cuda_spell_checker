@@ -414,7 +414,7 @@ class Command:
         WARN2 = _('So you need to re-configure these options each time you update Spell Checker plugin.')
         WARN3 = _('Settings will take effect after CudaText restart.')
         
-        DLG_W = 626
+        DLG_W = 680  # 626 is too small for translations
         DLG_H = 180
         BTN_W = 80
         c1 = chr(1)
