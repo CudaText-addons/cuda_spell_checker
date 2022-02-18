@@ -14,7 +14,6 @@ _ = get_translation(__file__)  # I18N
 
 json_parser = JsonComment(json)
 
-re_url = re.compile(r'\bhttps?://\S+', 0)
 
 def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s=='1'
@@ -25,6 +24,9 @@ op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['co
 op_underline_style = ini_read(filename_ini, 'op', 'underline_style', '6')
 op_confirm_esc = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key', '0'))
 op_file_types = ini_read(filename_ini, 'op', 'file_extension_list', '*')
+op_url_regex = ini_read(filename_ini, 'op', 'url_regex', r'\bhttps?://\S+')
+
+re_url = re.compile(op_url_regex, 0)
 
 _mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
@@ -405,11 +407,13 @@ class Command:
         global op_underline_style
         global op_confirm_esc
         global op_file_types
+        global op_url_regex
         global filename_ini
         ini_write(filename_ini, 'op', 'lang', op_lang)
         ini_write(filename_ini, 'op', 'underline_style', op_underline_style)
         ini_write(filename_ini, 'op', 'confirm_esc_key', bool_to_str(op_confirm_esc))
         ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
+        ini_write(filename_ini, 'op', 'url_regex', op_url_regex)
         if os.path.isfile(filename_ini):
             file_open(filename_ini)
 
