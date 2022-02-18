@@ -117,6 +117,8 @@ Options are:
     - "*" (star character): Enable for all files.
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
+      
+- "url_regex": RegEx which finds URLs to skip them on checking. Avoid complex RegExes, it's slower.
 
 
 About
