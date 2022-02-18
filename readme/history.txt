@@ -1,6 +1,6 @@
 
 2022.02.18
-+ add: skip URLs on checking (uses simgple regex like 'https?://\S+' )
++ add: skip URLs on checking (uses simple regex like '\bhttps?://\S+')
 
 2022.01.26
 - fix: on opening files, plugin ignored the setting "file_extension_list"
