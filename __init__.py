@@ -2,6 +2,7 @@
 import importlib
 import os
 import sys
+import re
 import string
 import json
 from .enchant_architecture import EnchantArchitecture
@@ -13,9 +14,10 @@ _ = get_translation(__file__)  # I18N
 
 json_parser = JsonComment(json)
 
+re_url = re.compile(r'\bhttps?://\S+', 0)
+
 def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s=='1'
-
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 op_lang = ini_read(filename_ini, 'op', 'lang', 'en_US')
@@ -146,6 +148,18 @@ def do_check_line(ed, nline, line,
 
     n1 = -1
 
+    ranges = []
+    urls = re_url.finditer(line)
+    if urls:
+        for i in urls:
+            ranges.append(i.span())
+
+    def is_url(x):
+        for r in ranges:
+            if (r[0]<=x<r[1]):
+                return True
+        return False
+
     while True:
         n1 += 1
         if n1>=len(line): break
@@ -169,6 +183,7 @@ def do_check_line(ed, nline, line,
             if kind not in ('c', 's'):
                 continue
 
+        if is_url(text_x): continue
         if not is_word_alpha(sub): continue
         if dict_obj.check(sub): continue
 
@@ -409,11 +424,11 @@ class Command:
         v = ini_read(filename_inf, 'item1', 'events', '')
         b_open = ',on_open,' in ','+v+','
         b_change = ',on_change_slow,' in ','+v+','
-        
+
         WARN1 = _('To not slow down CudaText when events are off, plugin saves these settings to install.inf file.')
         WARN2 = _('So you need to re-configure these options each time you update Spell Checker plugin.')
         WARN3 = _('Settings will take effect after CudaText restart.')
-        
+
         DLG_W = 680  # 626 is too small for translations
         DLG_H = 180
         BTN_W = 80
@@ -430,7 +445,7 @@ class Command:
               ),
               get_dict=True )
         if res is None: return
-          
+
         b_open = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
         v = []
