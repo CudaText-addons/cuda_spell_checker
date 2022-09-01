@@ -14,7 +14,6 @@ _ = get_translation(__file__)  # I18N
 
 json_parser = JsonComment(json)
 
-
 def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s=='1'
 
@@ -60,6 +59,55 @@ def is_word_alpha(s):
     if s[0] in "'": return False
     return True
 
+def get_current_word_under_cursor():
+    x, y, x2, y2 = ed.get_carets()[0]
+    line = ed.get_text_line(y)
+    if not line: return
+    if not (0 <= x < len(line)) or not is_word_char(line[x]):
+        return
+        
+    n1 = x
+    n2 = x
+    while n1>0 and is_word_char(line[n1-1]): n1-=1
+    while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
+    x = n1
+
+    return line[n1:n2+1]
+
+def replace_current_word_with_word(word):
+    def temp():
+        x, y, x2, y2 = ed.get_carets()[0]
+        line = ed.get_text_line(y)
+        if not line: return
+        if not (0 <= x < len(line)) or not is_word_char(line[x]):
+            return
+            
+        n1 = x
+        n2 = x
+        while n1>0 and is_word_char(line[n1-1]): n1-=1
+        while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
+        x = n1
+        
+        sub=get_current_word_under_cursor()
+        ed.set_caret(x, y, x+len(sub), y)
+        ed.delete(x, y, x+len(sub), y)
+        ed.insert(x, y, word)
+    return temp
+def context_menu():
+    spelling=None
+    for key in menu_proc("text",MENU_ENUM):
+        if key['cap']=='Spelling':
+            spelling=key['id']
+    if not spelling:       
+        spelling=menu_proc("text",MENU_ADD,caption="Spelling",index=0)
+    menu_proc(spelling,MENU_CLEAR)
+    
+    if dict_obj.check(get_current_word_under_cursor()):
+        menu_proc(spelling,MENU_REMOVE)
+        return
+    for _ in dict_obj.suggest(get_current_word_under_cursor()):
+        menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(_),caption=_)
+        
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
@@ -388,7 +436,10 @@ class Command:
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
-
+    
+    def on_click(self,ed_self,state):
+        context_menu()
+        
     def select_dict(self):
         res = dlg_select_dict()
         if res is None: return
