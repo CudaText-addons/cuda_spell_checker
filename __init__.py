@@ -88,6 +88,7 @@ def context_menu():
     for key in menu_proc("text",MENU_ENUM):
         if key['cap']=='Spelling':
             spelling=key['id']
+            break
     if not spelling:       
         spelling=menu_proc("text",MENU_ADD,caption="Spelling",index=0)
         
