@@ -59,7 +59,7 @@ def is_word_alpha(s):
     if s[0] in "'": return False
     return True
 
-def get_current_word_under_cursor():
+def caret_info():
     x, y, x2, y2 = ed.get_carets()[0]
     line = ed.get_text_line(y)
     if not line: return
@@ -71,30 +71,24 @@ def get_current_word_under_cursor():
     while n1>0 and is_word_char(line[n1-1]): n1-=1
     while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
     x = n1
-
-    return line[n1:n2+1]
+    
+    return locals()
+def get_current_word_under_caret():
+    info=caret_info()
+    return info['line'][info['n1']:info['n2']+1]
 
 def replace_current_word_with_word(word):
     def temp():
-        x, y, x2, y2 = ed.get_carets()[0]
-        line = ed.get_text_line(y)
-        if not line: return
-        if not (0 <= x < len(line)) or not is_word_char(line[x]):
-            return
-            
-        n1 = x
-        n2 = x
-        while n1>0 and is_word_char(line[n1-1]): n1-=1
-        while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
-        x = n1
+        info=caret_info()
         
         sub=get_current_word_under_cursor()
-        ed.set_caret(x, y, x+len(sub), y)
-        ed.delete(x, y, x+len(sub), y)
-        ed.insert(x, y, word)
+        ed.set_caret(info['x'], info['y'], info['x']+len(sub), info['y'])
+        ed.delete(info['x'], info['y'], info['x']+len(sub), info['y'])
+        ed.insert(info['x'], info['y'], word)
     return temp
 def context_menu():
     spelling=None
+    word=get_current_word_under_caret()
     for key in menu_proc("text",MENU_ENUM):
         if key['cap']=='Spelling':
             spelling=key['id']
@@ -102,11 +96,16 @@ def context_menu():
         spelling=menu_proc("text",MENU_ADD,caption="Spelling",index=0)
     menu_proc(spelling,MENU_CLEAR)
     
-    if dict_obj.check(get_current_word_under_cursor()):
+    if dict_obj.check(word):
         menu_proc(spelling,MENU_REMOVE)
         return
-    for _ in dict_obj.suggest(get_current_word_under_cursor()):
+        
+    suggestions=dict_obj.suggest(word)
+    for _ in dict_obj.suggest(word):
         menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(_),caption=_)
+        
+    if suggestions==[]:
+        menu_proc(spelling,MENU_ADD,caption="(No suggestions found)")
         
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
