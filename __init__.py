@@ -75,6 +75,8 @@ def caret_info():
     return locals()
 def get_current_word_under_caret():
     info=caret_info()
+    if not info:
+        return None
     return info['line'][info['n1']:info['n2']+1]
 
 def replace_current_word_with_word(word):
@@ -85,6 +87,8 @@ def replace_current_word_with_word(word):
 def context_menu():
     spelling=None
     word=get_current_word_under_caret()
+    if not word:
+        return
     submenu_title=_("Spelling")
     no_suggestions_found=_("No suggestions found")
     
