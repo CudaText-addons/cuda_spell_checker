@@ -64,7 +64,7 @@ def caret_info():
     line = ed.get_text_line(y)
     if not line: return
     if not (0 <= x < len(line)) or not is_word_char(line[x]):
-        return
+        return None
         
     n1 = x
     n2 = x
@@ -348,22 +348,12 @@ def do_work_word(with_dialog):
     global op_underline_color
     global op_underline_style
     BORDER_UNDER = int(op_underline_style)
-
-    x, y, x2, y2 = ed.get_carets()[0]
-    line = ed.get_text_line(y)
-    if not line: return
-
-    if not (0 <= x < len(line)) or not is_word_char(line[x]):
+    
+    if not caret_info():
         msg_status(_('Caret not on word-char'))
         return
 
-    n1 = x
-    n2 = x
-    while n1>0 and is_word_char(line[n1-1]): n1-=1
-    while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
-    x = n1
-
-    sub = line[n1:n2+1]
+    sub = get_current_word_under_caret()
     if not is_word_alpha(sub):
         msg_status(_('Not text-word under caret'))
         return
