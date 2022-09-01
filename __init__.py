@@ -85,12 +85,15 @@ def replace_current_word_with_word(word):
 def context_menu():
     spelling=None
     word=get_current_word_under_caret()
+    submenu_title=_("Spelling")
+    no_suggestions_found=_("No suggestions found")
+    
     for key in menu_proc("text",MENU_ENUM):
-        if key['cap']=='Spelling':
+        if key['cap']==submenu_title:
             spelling=key['id']
             break
     if not spelling:       
-        spelling=menu_proc("text",MENU_ADD,caption="Spelling",index=0)
+        spelling=menu_proc("text",MENU_ADD,caption=submenu_title,index=0)
         
     menu_proc(spelling,MENU_CLEAR)
     
@@ -103,7 +106,7 @@ def context_menu():
         menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(_),caption=_)
         
     if suggestions==[]:
-        menu_proc(spelling,MENU_ADD,caption="(No suggestions found)")
+        menu_proc(spelling,MENU_ADD,caption="("+no_suggestions_found+")")
         
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
