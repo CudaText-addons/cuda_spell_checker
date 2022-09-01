@@ -80,11 +80,7 @@ def get_current_word_under_caret():
 def replace_current_word_with_word(word):
     def temp():
         info=caret_info()
-        
-        sub=get_current_word_under_cursor()
-        ed.set_caret(info['x'], info['y'], info['x']+len(sub), info['y'])
-        ed.delete(info['x'], info['y'], info['x']+len(sub), info['y'])
-        ed.insert(info['x'], info['y'], word)
+        ed.replace(info['x'], info['y'], info['x']+len(get_current_word_under_caret()), info['y'],word)
     return temp
 def context_menu():
     spelling=None
