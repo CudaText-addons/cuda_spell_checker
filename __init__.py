@@ -102,8 +102,8 @@ def context_menu():
         return
         
     suggestions=dict_obj.suggest(word)
-    for _ in dict_obj.suggest(word):
-        menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(_),caption=_)
+    for suggestion in dict_obj.suggest(word):
+        menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(suggestion),caption=suggestion)
         
     if suggestions==[]:
         menu_proc(spelling,MENU_ADD,caption="("+no_suggestions_found+")")
