@@ -90,10 +90,11 @@ def context_menu():
             spelling=key['id']
     if not spelling:       
         spelling=menu_proc("text",MENU_ADD,caption="Spelling",index=0)
+        
     menu_proc(spelling,MENU_CLEAR)
     
     if dict_obj.check(word):
-        menu_proc(spelling,MENU_REMOVE)
+        menu_proc(spelling,MENU_SET_VISIBLE,command=False)
         return
         
     suggestions=dict_obj.suggest(word)
