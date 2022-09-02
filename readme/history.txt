@@ -1,3 +1,5 @@
+2022.09.01
++ add: when you right click a misspelled word your cursor is over, plugin adds "Spelling" sub-menu with suggestions to the editor context menu (feature by @DUOLabs333)
 
 2022.02.18
 + add: skip URLs on checking
