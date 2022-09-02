@@ -501,7 +501,7 @@ class Command:
         b_open = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
 
-        v = ['on_click~']
+        v = []
         if b_open:
             v+= ['on_open']
         if b_change:
