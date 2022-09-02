@@ -101,9 +101,12 @@ def context_menu():
         
     menu_proc(spelling,MENU_CLEAR)
     
-    if dict_obj.check(word):
-        menu_proc(spelling,MENU_SET_VISIBLE,command=False)
+    is_word_correct=dict_obj.check(word)
+    menu_proc(spelling,MENU_SET_VISIBLE,command=not is_word_correct)
+    
+    if is_word_correct:
         return
+        
         
     suggestions=dict_obj.suggest(word)
     for suggestion in dict_obj.suggest(word):
