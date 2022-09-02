@@ -14,7 +14,6 @@ _ = get_translation(__file__)  # I18N
 
 json_parser = JsonComment(json)
 
-
 def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s=='1'
 
@@ -60,6 +59,62 @@ def is_word_alpha(s):
     if s[0] in "'": return False
     return True
 
+def caret_info():
+    x, y, x2, y2 = ed.get_carets()[0]
+    line = ed.get_text_line(y)
+    if not line: return
+    if not (0 <= x < len(line)) or not is_word_char(line[x]):
+        return None
+        
+    n1 = x
+    n2 = x
+    while n1>0 and is_word_char(line[n1-1]): n1-=1
+    while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
+    x = n1
+    
+    return locals()
+def get_current_word_under_caret():
+    info=caret_info()
+    if not info:
+        return None
+    return info['line'][info['n1']:info['n2']+1]
+
+def replace_current_word_with_word(word):
+    def temp():
+        info=caret_info()
+        ed.replace(info['x'], info['y'], info['x']+len(get_current_word_under_caret()), info['y'],word)
+    return temp
+def context_menu():
+    spelling=None
+    word=get_current_word_under_caret()
+    if not word:
+        return
+    submenu_title=_("Spelling")
+    no_suggestions_found=_("No suggestions found")
+    
+    for key in menu_proc("text",MENU_ENUM):
+        if key['cap']==submenu_title:
+            spelling=key['id']
+            break
+    if not spelling:       
+        spelling=menu_proc("text",MENU_ADD,caption=submenu_title,index=0)
+        
+    menu_proc(spelling,MENU_CLEAR)
+    
+    is_word_correct=dict_obj.check(word)
+    menu_proc(spelling,MENU_SET_VISIBLE,command=not is_word_correct)
+    
+    if is_word_correct:
+        return
+        
+        
+    suggestions=dict_obj.suggest(word)
+    for suggestion in dict_obj.suggest(word):
+        menu_proc(spelling,MENU_ADD,command=replace_current_word_with_word(suggestion),caption=suggestion)
+        
+    if suggestions==[]:
+        menu_proc(spelling,MENU_ADD,caption="("+no_suggestions_found+")")
+        
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
@@ -300,22 +355,12 @@ def do_work_word(with_dialog):
     global op_underline_color
     global op_underline_style
     BORDER_UNDER = int(op_underline_style)
-
-    x, y, x2, y2 = ed.get_carets()[0]
-    line = ed.get_text_line(y)
-    if not line: return
-
-    if not (0 <= x < len(line)) or not is_word_char(line[x]):
+    
+    if not caret_info():
         msg_status(_('Caret not on word-char'))
         return
 
-    n1 = x
-    n2 = x
-    while n1>0 and is_word_char(line[n1-1]): n1-=1
-    while n2<len(line)-1 and is_word_char(line[n2+1]): n2+=1
-    x = n1
-
-    sub = line[n1:n2+1]
+    sub = get_current_word_under_caret()
     if not is_word_alpha(sub):
         msg_status(_('Not text-word under caret'))
         return
@@ -388,7 +433,10 @@ class Command:
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
-
+    
+    def on_click(self,ed_self,state):
+        context_menu()
+        
     def select_dict(self):
         res = dlg_select_dict()
         if res is None: return

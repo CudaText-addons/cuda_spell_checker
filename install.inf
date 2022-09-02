@@ -7,7 +7,7 @@ homepage=https://github.com/CudaText-addons/cuda_spell_checker
 
 [item1]
 section=events
-events=
+events=on_change_slow,on_click~
 
 [item10]
 section=commands
