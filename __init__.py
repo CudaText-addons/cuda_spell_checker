@@ -500,9 +500,12 @@ class Command:
 
         b_open = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
-        v = []
-        if b_open: v+= ['on_open']
-        if b_change: v+= ['on_change_slow']
+
+        v = ['on_click~']
+        if b_open:
+            v+= ['on_open']
+        if b_change:
+            v+= ['on_change_slow']
 
         ini_write(filename_inf, 'item1', 'events', ','.join(v))
 
