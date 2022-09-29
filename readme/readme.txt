@@ -124,5 +124,8 @@ Options are:
 About
 =====
 
-Author: Alexey Torgashin (CudaText)
+Authors:
+  Alexey Torgashin (CudaText)
+  CudaText forum member A:C
+  
 License: MIT
