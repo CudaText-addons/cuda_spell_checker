@@ -271,13 +271,14 @@ def do_work(with_dialog = False):
         percent_new = nline * 100 // total_lines
         if percent_new != percent:
             percent = percent_new
-            msg_status('Spell-checking %2d%%' % percent, True) # True = force msg
+            msg_status(_('Spell-checking: %2d%%') % percent, True) # True = force msg
             if app_proc(PROC_GET_ESCAPE, ''):
                 app_proc(PROC_SET_ESCAPE, False)
                 escape = True
-                if op_confirm_esc: escape = msg_box('Stop spell-checking?', MB_OKCANCEL + MB_ICONQUESTION) == ID_OK
+                if op_confirm_esc:
+                    escape = msg_box(_('Stop the spell-checking?'), MB_OKCANCEL + MB_ICONQUESTION) == ID_OK
                 if escape:
-                    msg_status('Spell-check stopped')
+                    msg_status(_('Spell-checking stopped'))
                     return
 
         ed.attr(MARKERS_DELETE_BY_POS, x = -1, y = nline) # remove all markers for this line
