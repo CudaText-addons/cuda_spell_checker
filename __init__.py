@@ -176,7 +176,7 @@ def need_check_tokens(ed):
     else:
         return False
 
-def do_check_line(ed, nline, with_dialog, check_tokens):
+def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
     count = 0
     replaced = 0
     res_x = []
@@ -196,10 +196,11 @@ def do_check_line(ed, nline, with_dialog, check_tokens):
                 return True, r[1]
         return False, None
 
-    n1 = -1
+    n1 = x_start - 1
     while True:
         n1 += 1
         if n1 >= len(line)           : break
+        if (x_end >= 0) and (n1 >= x_end): break
         if not is_word_char(line[n1]): continue
         n2 = n1 + 1
         while n2 < len(line) and is_word_char(line[n2]): n2 += 1
@@ -258,11 +259,14 @@ def do_work(with_dialog = False):
     is_selection = y2 >= 0
 
     if is_selection:
-        if y1 > y2: y1, y2 = y2, y1  # sort if neccessary
+        if (y1, x1) > (y2, x2):
+            x1, y1, x2, y2 = x2, y2, x1, y1  # sort if neccessary
         y2 += 1                      # last line has to be included (range)
         total_lines = y2 - y1
     else:
         total_lines = ed.get_line_count()
+        x1 = 0
+        x2 = -1
         y1 = 0
         y2 = total_lines
 
@@ -286,7 +290,10 @@ def do_work(with_dialog = False):
                     msg_status(_('Spell-checking stopped'))
                     break
 
-        res = do_check_line(ed, nline, with_dialog, check_tokens)
+        x_start = x1 if nline == y1 else 0
+        x_end = x2 if nline == y2 - 1 else -1
+
+        res = do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens)
         if res is None:
             if with_dialog and (count_all > 0): reset_carets(carets)
             return

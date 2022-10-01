@@ -1,5 +1,6 @@
 
 2022.09.29
++ add: if selection is made, 'Check text' checks only this selection (by Alexey)
 * add/change: reworked lot of code by forum member 'A:C', code should work faster with big dictionary
 
 2022.09.01
