@@ -63,9 +63,9 @@ def caret_info():
     if not (0 <= x < len(line)) or not is_word_char(line[x]): return None
 
     n1 = x
-    n2 = x
-    while n1 > 0 and is_word_char(line[n1 - 1]): n1 -= 1
-    while n2 < len(line) - 1 and is_word_char(line[n2 + 1]): n2 += 1
+    n2 = x + 1
+    while n1 > 0 and is_word_char(line[n1 - 1])    : n1 -= 1
+    while n2 < len(line) and is_word_char(line[n2]): n2 += 1
     x = n1
 
     return locals()
@@ -73,13 +73,12 @@ def caret_info():
 def get_current_word_under_caret():
     info = caret_info()
     if not info: return None
-    return info['line'][info['n1']:info['n2'] + 1]
+    return info['line'][info['n1']:info['n2']]
 
 def replace_current_word_with_word(word, info):
-    def temp():
-        #info = caret_info()
-        ed.replace(info['n1'], info['y'], info['n2'] + 1, info['y'], word)
-    return temp
+    def inner():
+        ed.replace(info['n1'], info['y'], info['n2'], info['y'], word)
+    return inner
 
 def context_menu(reset = False):
     if reset:
@@ -267,8 +266,14 @@ def do_work(with_dialog = False):
         y1 = 0
         y2 = total_lines
 
+    ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)   # delete all, otherwise inserting additional markers takes a long time
+
+    res_x = []
+    res_y = []
+    res_n = []
+    escape = False
     for nline in range(y1, y2):
-        percent_new = nline * 100 // total_lines
+        percent_new = (nline - y1) * 100 // total_lines
         if percent_new != percent:
             percent = percent_new
             msg_status(_('Spell-checking: %2d%%') % percent, True) # True = force msg
@@ -279,26 +284,28 @@ def do_work(with_dialog = False):
                     escape = msg_box(_('Stop the spell-checking?'), MB_OKCANCEL + MB_ICONQUESTION) == ID_OK
                 if escape:
                     msg_status(_('Spell-checking stopped'))
-                    return
+                    break
 
-        ed.attr(MARKERS_DELETE_BY_POS, x = -1, y = nline) # remove all markers for this line
         res = do_check_line(ed, nline, with_dialog, check_tokens)
         if res is None:
             if with_dialog and (count_all > 0): reset_carets(carets)
             return
         count_all     += res[0]
         count_replace += res[1]
-        res_x          = res[2]
-        res_y          = res[3]
-        res_n          = res[4]
+        res_x         += res[2]
+        res_y         += res[3]
+        res_n         += res[4]
 
-        ed.attr(
-          MARKERS_ADD_MANY, MARKTAG,
-          res_x, res_y, res_n,
-          COLOR_NONE, COLOR_NONE, op_underline_color,
-          0, 0, 0,
-          0, 0, op_underline_style, 0,
-          show_on_map = True)
+    # setting all markers at once is a bit faster than line by line
+    ed.attr(
+        MARKERS_ADD_MANY, MARKTAG,
+        res_x, res_y, res_n,
+        COLOR_NONE, COLOR_NONE, op_underline_color,
+        0, 0, 0,
+        0, 0, op_underline_style, 0,
+        show_on_map = True)
+        
+    if escape: return
 
     msg_sel = _('selection only') if is_selection else _('all text')
     msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace))
@@ -352,7 +359,7 @@ def do_work_word(with_dialog):
           op_underline_color,
           0, 0, 0, 0, 0,
           op_underline_style,
-          show_on_map=True)
+          show_on_map = True)
 
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
