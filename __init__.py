@@ -450,7 +450,7 @@ class Command:
         b_change = ',on_change_slow,' in ',' + v + ','
         b_click  = ',on_click~,'      in ',' + v + ','
 
-        DLG_W = 680  # 626 is too small for translations
+        DLG_W = 630
         DLG_H = 130
         BTN_W = 100
         c1 = chr(1)
