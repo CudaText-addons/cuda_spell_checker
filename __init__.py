@@ -15,6 +15,7 @@ def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s == '1'
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
+filename_plugins = os.path.join(app_path(APP_DIR_SETTINGS), 'plugins.ini')
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 
 op_lang            =             ini_read(filename_ini, 'op', 'lang'               , 'en_US'          )
@@ -444,26 +445,18 @@ class Command:
         do_goto(False)
 
     def config_events(self):
-        filename_inf = os.path.join(_mydir, 'install.inf')
-        v = ini_read(filename_inf, 'item1', 'events', '')
+        v = ini_read(filename_plugins, 'events', 'cuda_spell_checker', '')
         b_open   = ',on_open,'        in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
 
-        WARN1 = _('To not slow down CudaText when events are off, plugin saves these settings to install.inf file.')
-        WARN2 = _('So you need to re-configure these options each time you update Spell Checker plugin.')
-        WARN3 = _('Settings will take effect after CudaText restart.')
-
         DLG_W = 680  # 626 is too small for translations
-        DLG_H = 180
-        BTN_W =  80
+        DLG_H = 110
+        BTN_W = 100
         c1 = chr(1)
 
         res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_open" (opening of a file)')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_open)])  ]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
-              + [c1.join(['type=label' , 'cap='+WARN1      , 'pos=6,70,500,0' ])]
-              + [c1.join(['type=label' , 'cap='+WARN2      , 'pos=6,90,500,0' ])]
-              + [c1.join(['type=label' , 'cap='+WARN3      , 'pos=6,110,500,0'])]
               + [c1.join(['type=button', 'cap='+_('&OK')   , 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)]), 'ex0=1']
               + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6   , DLG_H-30, DLG_W-6       , 0)])         ]
               ),
@@ -477,7 +470,7 @@ class Command:
         if b_open  : v += ['on_open']
         if b_change: v += ['on_change_slow']
 
-        ini_write(filename_inf, 'item1', 'events', ','.join(v))
+        ini_write(filename_plugins, 'events', 'cuda_spell_checker', ','.join(v))
 
     def del_marks(self):
         Command.active = False
