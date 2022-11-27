@@ -18,7 +18,10 @@ Copy files to folder:
 - on Windows:
   32-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
   64-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
-- on Unix: ~/.enchant/myspell/
+- on Unix:
+  ~/.enchant/myspell
+  or
+  ~/.config/enchant
 
 
 Menu items
