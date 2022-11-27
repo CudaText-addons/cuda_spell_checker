@@ -448,15 +448,17 @@ class Command:
         v = ini_read(filename_plugins, 'events', 'cuda_spell_checker', '')
         b_open   = ',on_open,'        in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
+        b_click  = ',on_click~,'      in ',' + v + ','
 
         DLG_W = 680  # 626 is too small for translations
-        DLG_H = 110
+        DLG_H = 130
         BTN_W = 100
         c1 = chr(1)
 
         res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_open" (opening of a file)')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_open)])  ]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
+              + [c1.join(['type=check' , 'cap='+_('Handle event "on_click" to support context menu'),         'pos=6,66,400,0', 'val='+bool_to_str(b_click)]) ]
               + [c1.join(['type=button', 'cap='+_('&OK')   , 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)]), 'ex0=1']
               + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6   , DLG_H-30, DLG_W-6       , 0)])         ]
               ),
@@ -465,10 +467,12 @@ class Command:
 
         b_open   = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
+        b_click  = str_to_bool(res[2])
 
         v = []
         if b_open  : v += ['on_open']
         if b_change: v += ['on_change_slow']
+        if b_click : v += ['on_click~']
 
         ini_write(filename_plugins, 'events', 'cuda_spell_checker', ','.join(v))
 

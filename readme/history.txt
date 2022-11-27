@@ -1,5 +1,6 @@
 2022.11.27
-+ add: instead of install.inf, write event-options (on_open/on_change_slow) to plugins.ini
+* change: instead of install.inf, write event-options (on_open/on_change_slow) to plugins.ini
+* change: by default, on_click handler is off, so context menu won't be updated after click on a word; to turn the on_click on - use the "Configure events" command
 
 2022.09.29
 + add: if selection is made, 'Check text' checks only this selection (by Alexey)
