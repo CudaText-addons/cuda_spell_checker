@@ -15,7 +15,6 @@ def bool_to_str(v): return '1' if v else '0'
 def str_to_bool(s): return s == '1'
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
-filename_plugins = os.path.join(app_path(APP_DIR_SETTINGS), 'plugins.ini')
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 
 op_lang            =             ini_read(filename_ini, 'op', 'lang'               , 'en_US'          )
@@ -30,8 +29,8 @@ _mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
 
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
-if os.name == "nt":
-    os.environ["PATH"] += ";" + os.path.join(_mydir, _ench) + ";" + os.path.join(_mydir, _ench, "lib", "enchant")
+if sys.platform == "win32":
+    os.environ["PATH"] += ";" + os.path.join(_mydir, _ench, "data", "bin") + ";" + os.path.join(_mydir, _ench, "data", "lib", "enchant-2")
 
 sys.path.append(_mydir)
 
@@ -445,20 +444,26 @@ class Command:
         do_goto(False)
 
     def config_events(self):
-        v = ini_read(filename_plugins, 'events', 'cuda_spell_checker', '')
+        filename_inf = os.path.join(_mydir, 'install.inf')
+        v = ini_read(filename_inf, 'item1', 'events', '')
         b_open   = ',on_open,'        in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
-        b_click  = ',on_click~,'      in ',' + v + ','
 
-        DLG_W = 630
-        DLG_H = 130
-        BTN_W = 100
+        WARN1 = _('To not slow down CudaText when events are off, plugin saves these settings to install.inf file.')
+        WARN2 = _('So you need to re-configure these options each time you update Spell Checker plugin.')
+        WARN3 = _('Settings will take effect after CudaText restart.')
+
+        DLG_W = 680  # 626 is too small for translations
+        DLG_H = 180
+        BTN_W =  80
         c1 = chr(1)
 
         res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_open" (opening of a file)')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_open)])  ]
               + [c1.join(['type=check' , 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
-              + [c1.join(['type=check' , 'cap='+_('Handle event "on_click" to support context menu'),         'pos=6,66,400,0', 'val='+bool_to_str(b_click)]) ]
+              + [c1.join(['type=label' , 'cap='+WARN1      , 'pos=6,70,500,0' ])]
+              + [c1.join(['type=label' , 'cap='+WARN2      , 'pos=6,90,500,0' ])]
+              + [c1.join(['type=label' , 'cap='+WARN3      , 'pos=6,110,500,0'])]
               + [c1.join(['type=button', 'cap='+_('&OK')   , 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)]), 'ex0=1']
               + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6   , DLG_H-30, DLG_W-6       , 0)])         ]
               ),
@@ -467,14 +472,12 @@ class Command:
 
         b_open   = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
-        b_click  = str_to_bool(res[2])
 
         v = []
         if b_open  : v += ['on_open']
         if b_change: v += ['on_change_slow']
-        if b_click : v += ['on_click~']
 
-        ini_write(filename_plugins, 'events', 'cuda_spell_checker', ','.join(v))
+        ini_write(filename_inf, 'item1', 'events', ','.join(v))
 
     def del_marks(self):
         Command.active = False
