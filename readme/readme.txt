@@ -16,8 +16,8 @@ https://github.com/titoBouzout/Dictionaries
 Rename files to short names, e.g. Russian.* to ru.* or ru_RU.*
 Copy files to folder:
 - on Windows:
-  32-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x86\share\enchant\myspell\
-  64-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x64\share\enchant\myspell\
+  32-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x86\data\share\enchant\hunspell\
+  64-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x64\data\share\enchant\hunspell\
 - on Unix:
   ~/.enchant/myspell
   or
