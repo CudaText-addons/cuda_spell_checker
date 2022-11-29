@@ -36,7 +36,6 @@ This module provides miscellaneous utilities for use with the
 enchant spellchecking package.  Currently available functionality
 includes:
 
-    * string/unicode compatibility wrappers
     * functions for dealing with locale/language settings
     * ability to list supporting data files (win32 only)
     * functions for bundling supporting data files from a build
@@ -44,195 +43,15 @@ includes:
 """
 
 import importlib
-import codecs
-import os
-import sys
 from enchant_architecture import EnchantArchitecture
-
 # use dynamic import commands to support different folder structures
 # for Windows 32-bit and 64-bit support
 enchant_errors = importlib.import_module('.errors', EnchantArchitecture())
 
-#from enchant.errors import *
+Error = enchant_errors.Error
 
-# Attempt to access local language information
-try:
-    import locale
-except ImportError:
-    locale = None
-
-
-#
-#  Unicode/Bytes compatibility wrappers.
-#
-#  These allow us to support both Python 2.x and Python 3.x from
-#  the same codebase.
-#
-#  We provide explicit type objects "bytes" and "unicode" that can be
-#  used to construct instances of the appropriate type.  The class
-#  "EnchantStr" derives from the default "str" type and implements the
-#  necessary logic for encoding/decoding as strings are passed into
-#  the underlying C library (where they must always be utf-8 encoded
-#  byte strings).
-#
-
-try:
-    unicode = unicode
-except NameError:
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-    chr = chr
-else:
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-    chr = unichr
-
-def raw_unicode(raw):
-    """Make a unicode string from a raw string.
-
-    This function takes a string containing unicode escape characters,
-    and returns the corresponding unicode string.  Useful for writing
-    unicode string literals in your python source while being upwards-
-    compatible with Python 3.  For example, instead of doing this:
-
-      s = u"hello\u2149"  # syntax error in Python 3
-
-    Or this:
-
-      s = "hello\u2149"   # not what you want in Python 2.x
-
-    You can do this:
-
-      s = raw_unicode(r"hello\u2149")  # works everywhere!
-
-    """
-    return raw.encode("utf8").decode("unicode-escape")
-
-
-def raw_bytes(raw):
-    """Make a bytes object out of a raw string.
-
-    This is analogous to raw_unicode, but processes byte escape characters
-    to produce a bytes object.
-    """
-    return codecs.escape_decode(raw)[0]
-
-
-class EnchantStr(str):
-    """String subclass for interfacing with enchant C library.
-
-    This class encapsulates the logic for interfacing between python native
-    string/unicode objects and the underlying enchant library, which expects
-    all strings to be UTF-8 character arrays.  It is a subclass of the
-    default string class 'str' - on Python 2.x that makes it an ascii string,
-    on Python 3.x it is a unicode object.
-
-    Initialise it with a string or unicode object, and use the encode() method
-    to obtain an object suitable for passing to the underlying C library.
-    When strings are read back into python, use decode(s) to translate them
-    back into the appropriate python-level string type.
-
-    This allows us to following the common Python 2.x idiom of returning
-    unicode when unicode is passed in, and byte strings otherwise.  It also
-    lets the interface be upwards-compatible with Python 3, in which string
-    objects are unicode by default.
-    """
-
-    def __new__(cls,value):
-        """EnchantStr data constructor.
-
-        This method records whether the initial string was unicode, then
-        simply passes it along to the default string constructor.
-        """
-        if type(value) is unicode:
-            was_unicode = True
-            if str is not unicode:
-                value = value.encode("utf-8")
-        else:
-            was_unicode = False
-            if str is not bytes:
-                raise Error("Don't pass bytestrings to pyenchant")
-        self = str.__new__(cls,value)
-        self._was_unicode = was_unicode
-        return self
-
-    def encode(self):
-        """Encode this string into a form usable by the enchant C library."""
-        if str is unicode:
-          return str.encode(self,"utf-8")
-        else:
-          return self
-
-    def decode(self,value):
-        """Decode a string returned by the enchant C library."""
-        if self._was_unicode:
-          if str is unicode:
-            # On some python3 versions, ctypes converts c_char_p
-            # to str() rather than bytes()
-            if isinstance(value,str):
-                value = value.encode()
-            return value.decode("utf-8")
-          else:
-            return value.decode("utf-8")
-        else:
-          return value
-
-
-class UTF16EnchantStr(EnchantStr):
-
-    # Defines the UNICODE replacement character
-    REPLACEMENT_CHAR = chr(2**16 - 3)
-
-    def encode(self):
-        """Encode this string into a form usable by the enchant C library."""
-        if str is unicode:
-            unicode_chars = self
-        else:
-            unicode_chars = unicode(self, 'utf8', errors='replace')
-
-        utf16_safe_string = "".join(c if ord(c) < 2**16
-                                      else self.REPLACEMENT_CHAR
-                                    for c in unicode_chars)
-
-        if str is unicode:
-            return bytes(utf16_safe_string, "utf8")
-        else:
-            return utf16_safe_string.encode("utf8")
-
-
-
-def printf(values,sep=" ",end="\n",file=None):
-    """Compatibility wrapper from print statement/function.
-
-    This function is a simple Python2/Python3 compatibility wrapper
-    for printing to stdout.
-    """
-    if file is None:
-        file = sys.stdout
-    file.write(sep.join(map(str,values)))
-    file.write(end)
-
-
-try:
-    next = next
-except NameError:
-    def next(iter):
-        """Compatibility wrapper for advancing an iterator."""
-        return iter.next()
-
-try:
-    xrange = xrange
-except NameError:
-    xrange = range
-
-
-#
-#  Other useful functions.
-#
+# from enchant.errors import Error
+import locale
 
 
 def levenshtein(s1, s2):
@@ -245,7 +64,7 @@ def levenshtein(s1, s2):
     if not s1:
         return len(s2)
 
-    previous_row = xrange(len(s2) + 1)
+    previous_row = range(len(s2) + 1)
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -258,8 +77,7 @@ def levenshtein(s1, s2):
     return previous_row[-1]
 
 
-
-def trim_suggestions(word,suggs,maxlen,calcdist=None):
+def trim_suggestions(word, suggs, maxlen, calcdist=None):
     """Trim a list of suggestions to a maximum length.
 
     If the list of suggested words is too long, you can use this function
@@ -273,10 +91,9 @@ def trim_suggestions(word,suggs,maxlen,calcdist=None):
     """
     if calcdist is None:
         calcdist = levenshtein
-    decorated = [(calcdist(word,s),s) for s in suggs]
+    decorated = [(calcdist(word, s), s) for s in suggs]
     decorated.sort()
-    return [s for (l,s) in decorated[:maxlen]]
-
+    return [s for (l, s) in decorated[:maxlen]]
 
 
 def get_default_language(default=None):
@@ -297,7 +114,6 @@ def get_default_language(default=None):
     on their system.
     """
     try:
-        import locale
         tag = locale.getlocale()[0]
         if tag is None:
             tag = locale.getdefaultlocale()[0]
@@ -307,75 +123,6 @@ def get_default_language(default=None):
     except Exception:
         pass
     return default
+
+
 get_default_language._DOC_ERRORS = ["LC"]
-
-
-def get_resource_filename(resname):
-    """Get the absolute path to the named resource file.
-
-    This serves widely the same purpose as pkg_resources.resource_filename(),
-    but tries to avoid loading pkg_resources unless we're actually in
-    an egg.
-    """
-    path = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(path,resname)
-    if os.path.exists(path):
-        return path
-    if hasattr(sys, "frozen"):
-        exe_path = sys.executable
-        if not isinstance(exe_path, unicode):
-            exe_path = unicode(exe_path,sys.getfilesystemencoding())
-        exe_dir = os.path.dirname(exe_path)
-        path = os.path.join(exe_dir, resname)
-        if os.path.exists(path):
-            return path
-    else:
-        import pkg_resources
-        try:
-            path = pkg_resources.resource_filename("enchant",resname)
-        except KeyError:
-            pass
-        else:
-            path = os.path.abspath(path)
-            if os.path.exists(path):
-                return path
-    raise Error("Could not locate resource '%s'" % (resname,))
-
-
-def win32_data_files():
-    """Get list of supporting data files, for use with setup.py
-
-    This function returns a list of the supporting data files available
-    to the running version of PyEnchant.  This is in the format expected
-    by the data_files argument of the distutils setup function.  It's
-    very useful, for example, for including the data files in an executable
-    produced by py2exe.
-
-    Only really tested on the win32 platform (it's the only platform for
-    which we ship our own supporting data files)
-    """
-    #  Include the main enchant DLL
-    try:
-        libEnchant = get_resource_filename("libenchant.dll")
-    except Error:
-        libEnchant = get_resource_filename("libenchant-1.dll")
-    mainDir = os.path.dirname(libEnchant)
-    dataFiles = [('',[libEnchant])]
-    #  And some specific supporting DLLs
-    for dll in os.listdir(mainDir):
-        if dll.endswith(".dll"):
-            for prefix in ("libiconv","libintl","libglib","libgmodule"):
-                if dll.startswith(prefix):
-                    dataFiles[0][1].append(os.path.join(mainDir,dll))
-    #  And anything found in the supporting data directories
-    dataDirs = ("share/enchant/myspell","share/enchant/ispell","lib/enchant")
-    for dataDir in dataDirs:
-        files = []
-        fullDir = os.path.join(mainDir,os.path.normpath(dataDir))
-        for fn in os.listdir(fullDir):
-            fullFn = os.path.join(fullDir,fn)
-            if os.path.isfile(fullFn):
-                files.append(fullFn)
-        dataFiles.append((dataDir,files))
-    return dataFiles
-win32_data_files._DOC_ERRORS = ["py","py","exe"]

@@ -30,8 +30,8 @@ _mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
 
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
-if os.name == "nt":
-    os.environ["PATH"] += ";" + os.path.join(_mydir, _ench) + ";" + os.path.join(_mydir, _ench, "lib", "enchant")
+if sys.platform == "win32":
+    os.environ["PATH"] += ";" + os.path.join(_mydir, _ench, "data", "bin") + ";" + os.path.join(_mydir, _ench, "data", "lib", "enchant-2")
 
 sys.path.append(_mydir)
 

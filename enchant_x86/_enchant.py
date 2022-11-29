@@ -27,6 +27,7 @@
 # file, but you are not obligated to do so.  If you do not wish to
 # do so, delete this exception statement from your version.
 #
+
 """
 
     enchant._enchant:  ctypes-based wrapper for enchant C library
@@ -48,125 +49,136 @@
 
 """
 
-import importlib
-import sys, os, os.path
-from ctypes import *
-from ctypes.util import find_library
-from enchant_architecture import EnchantArchitecture
-
-# use dynamic import commands to support different folder structures
-# for Windows 32-bit and 64-bit support
-enchant_utils = importlib.import_module('.utils', EnchantArchitecture())
-enchant_errors = importlib.import_module('.errors', EnchantArchitecture())
-
-unicode = enchant_utils.unicode
-
-# from enchant import utils
-# from enchant.errors import *
-# from enchant.utils import unicode
-
-# Locate and load the enchant dll.
-# We've got several options based on the host platform.
-
-e = None
-
-def _e_path_possibilities():
-    """Generator yielding possible locations of the enchant library."""
-    # Allow it to be overridden using an environment variable.
-    yield os.environ.get("PYENCHANT_LIBRARY_PATH")
-    # For linuxish systems, allow default soname lookup a chance to succeed.
-    if sys.platform not in ("win32", "darwin"):
-        yield "libenchant.so.1.6.0"
-        yield "libenchant.so.1"
-        yield "libenchant.so"
-    # See if ctypes can find the library for us, under various names.
-    yield find_library("enchant")
-    yield find_library("enchant-2") # https://github.com/Alexey-T/CudaText/issues/3680#issuecomment-905007553
-    yield find_library("libenchant")
-    yield find_library("libenchant-1")
-    # Special-case handling for enchant installed by macports.
-    if sys.platform == 'darwin':
-         yield "/opt/local/lib/libenchant.dylib"
+import sys
+import os
+import os.path
+import ctypes
+from ctypes import c_char_p, c_int, c_size_t, c_void_p, pointer, CFUNCTYPE, POINTER
+import ctypes.util
+import platform
+import textwrap
 
 
-# On win32 we ship a bundled version of the enchant DLLs.
-# Use them if they're present.
-if sys.platform == "win32":
-    e_path = None
-    try:
-        e_path = enchant_utils.get_resource_filename("libenchant.dll")
-    except (enchant_errors.Error,ImportError):
-         try:
-            e_path = enchant_utils.get_resource_filename("libenchant-1.dll")
-         except (enchant_errors.Error,ImportError):
-            pass
-    if e_path is not None:
-        # We need to use LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH so
-        # that we don't accidentally suck in other versions of e.g. glib.
-        if not isinstance(e_path,unicode):
-            e_path = unicode(e_path,sys.getfilesystemencoding())
-        LoadLibraryEx = windll.kernel32.LoadLibraryExW
-        LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008
-        e_handle = LoadLibraryEx(e_path,None,LOAD_WITH_ALTERED_SEARCH_PATH)
-        if not e_handle:
-            raise WinError()
-        e = CDLL(e_path,handle=e_handle)
+def from_prefix(prefix):
+    find_message("finding from prefix ", prefix)
+    assert os.path.exists(prefix), prefix + "  does not exist"
+    bin_path = os.path.join(prefix, "bin")
+    enchant_dll_path = os.path.join(bin_path, "libenchant-2.dll")
+    assert os.path.exists(enchant_dll_path), enchant_dll_path + " does not exist"
+    # Make sure all the dlls found next to libenchant-2.dll
+    # (libglib-2.0-0.dll, libgmodule-2.0-0.dll, ...) can be
+    # used without having to modify %PATH%
+    new_path = bin_path + os.pathsep + os.environ["PATH"]
+    find_message("Prepending ", bin_path, " to %PATH%")
+    os.environ["PATH"] = new_path
+    return enchant_dll_path
 
 
-# On darwin we ship a bundled version of the enchant DLLs.
-# Use them if they're present.
-if e is None and sys.platform == "darwin":
-  try:
-      e_path = enchant_utils.get_resource_filename("lib/libenchant.1.dylib")
-  except (enchant_errors.Error,ImportError):
-      pass
-  else:
-      # Enchant doesn't natively support relocatable binaries on OSX.
-      # We fake it by patching the enchant source to expose a char**, which
-      # we can write the runtime path into ourselves.
-      e = CDLL(e_path)
-      try:
-          e_dir = os.path.dirname(os.path.dirname(e_path))
-          if isinstance(e_dir,unicode):
-              e_dir = e_dir.encode(sys.getfilesystemencoding())
-          prefix_dir = POINTER(c_char_p).in_dll(e,"enchant_prefix_dir_p")
-          prefix_dir.contents = c_char_p(e_dir)
-      except AttributeError:
-          e = None
+def from_env_var(library_path):
+    find_message("using PYENCHANT_LIBRARY_PATH env var")
+    assert os.path.exists(library_path), library_path + " does not exist"
+    return library_path
 
 
-# Not found yet, search various standard system locations.
-if e is None:
-    for e_path in _e_path_possibilities():
-        if e_path is not None:
-            try:
-                e = cdll.LoadLibrary(e_path)
-            except OSError:
-                pass
-            else:
-                break
+def from_package_resources():
+    if sys.platform != "win32":
+        return None
+    bits, _ = platform.architecture()
+    if bits == "64bit":
+        subdir = "mingw64"  # hopefully this is compatible
+    else:
+        subdir = "mingw32"  # ditto
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(this_path, "data", subdir)
+    find_message("looking in ", data_path)
+    if os.path.exists(data_path):
+        return from_prefix(data_path)
 
 
-# No usable enchant install was found :-(
-if e is None:
-   msg = "The 'enchant' C library was not found. "\
-         "Please install it via your OS package manager, "\
-         "or use a pre-built binary wheel from PyPI."
-   raise ImportError(msg)
+def from_system():
+    # Note: keep enchant-2 first
+    find_message("looking in system")
+    candidates = [
+        "enchant-2",
+        "libenchant-2",
+        "enchant",
+        "libenchant",
+        "enchant-1",
+        "libenchant-1",
+    ]
+
+    for name in candidates:
+        find_message("with name ", name)
+        res = ctypes.util.find_library(name)
+        if res:
+            return res
 
 
-# Define various callback function types
+VERBOSE_FIND = False
 
-def CALLBACK(restype,*argtypes):
+
+def find_message(*args):
+    if not VERBOSE_FIND:
+        return
+    print("pyenchant:: ", *args, sep="")
+
+
+def find_c_enchant_lib():
+    verbose = os.environ.get("PYENCHANT_VERBOSE_FIND")
+    if verbose:
+        global VERBOSE_FIND
+        VERBOSE_FIND = True
+    prefix = os.environ.get("PYENCHANT_ENCHANT_PREFIX")
+    if prefix:
+        return from_prefix(prefix)
+
+    library_path = os.environ.get("PYENCHANT_LIBRARY_PATH")
+    if library_path:
+        return from_env_var(library_path)
+
+    from_package = from_package_resources()
+    if from_package:
+        return from_package
+
+    # Last chance
+    return from_system()
+
+
+enchant_lib_path = find_c_enchant_lib()
+
+if enchant_lib_path is None:
+    msg = textwrap.dedent(
+        """\
+        The 'enchant' C library was not found and maybe needs to be installed.
+        See  https://pyenchant.github.io/pyenchant/install.html
+        for details
+        """
+    )
+    raise ImportError(msg)
+
+
+find_message("loading library ", enchant_lib_path)
+e = ctypes.cdll.LoadLibrary(enchant_lib_path)
+
+# Always assume the found enchant C dll is inside
+# the correct directory layout
+prefix_dir = os.path.dirname(os.path.dirname(enchant_lib_path))
+if hasattr(e, "enchant_set_prefix_dir") and prefix_dir:
+    find_message("setting prefix ", prefix_dir)
+    e.enchant_set_prefix_dir(prefix_dir.encode())
+
+
+def callback(restype, *argtypes):
     """Factory for generating callback function prototypes.
 
     This is factored into a factory so I can easily change the definition
     for experimentation or debugging.
     """
-    return CFUNCTYPE(restype,*argtypes)
+    return CFUNCTYPE(restype, *argtypes)
 
-t_broker_desc_func = CALLBACK(None,c_char_p,c_char_p,c_char_p,c_void_p)
-t_dict_desc_func = CALLBACK(None,c_char_p,c_char_p,c_char_p,c_char_p,c_void_p)
+
+t_broker_desc_func = callback(None, c_char_p, c_char_p, c_char_p, c_void_p)
+t_dict_desc_func = callback(None, c_char_p, c_char_p, c_char_p, c_char_p, c_void_p)
 
 
 # Simple typedefs for readability
@@ -186,23 +198,23 @@ broker_free.argtypes = [t_broker]
 broker_free.restype = None
 
 broker_request_dict = e.enchant_broker_request_dict
-broker_request_dict.argtypes = [t_broker,c_char_p]
+broker_request_dict.argtypes = [t_broker, c_char_p]
 broker_request_dict.restype = t_dict
 
 broker_request_pwl_dict = e.enchant_broker_request_pwl_dict
-broker_request_pwl_dict.argtypes = [t_broker,c_char_p]
+broker_request_pwl_dict.argtypes = [t_broker, c_char_p]
 broker_request_pwl_dict.restype = t_dict
 
 broker_free_dict = e.enchant_broker_free_dict
-broker_free_dict.argtypes = [t_broker,t_dict]
+broker_free_dict.argtypes = [t_broker, t_dict]
 broker_free_dict.restype = None
 
 broker_dict_exists = e.enchant_broker_dict_exists
-broker_dict_exists.argtypes = [t_broker,c_char_p]
-broker_free_dict.restype = c_int
+broker_dict_exists.argtypes = [t_broker, c_char_p]
+broker_dict_exists.restype = c_int
 
 broker_set_ordering = e.enchant_broker_set_ordering
-broker_set_ordering.argtypes = [t_broker,c_char_p,c_char_p]
+broker_set_ordering.argtypes = [t_broker, c_char_p, c_char_p]
 broker_set_ordering.restype = None
 
 broker_get_error = e.enchant_broker_get_error
@@ -210,39 +222,51 @@ broker_get_error.argtypes = [t_broker]
 broker_get_error.restype = c_char_p
 
 broker_describe1 = e.enchant_broker_describe
-broker_describe1.argtypes = [t_broker,t_broker_desc_func,c_void_p]
+broker_describe1.argtypes = [t_broker, t_broker_desc_func, c_void_p]
 broker_describe1.restype = None
-def broker_describe(broker,cbfunc):
+
+
+def broker_describe(broker, cbfunc):
     def cbfunc1(*args):
         cbfunc(*args[:-1])
-    broker_describe1(broker,t_broker_desc_func(cbfunc1),None)
+
+    broker_describe1(broker, t_broker_desc_func(cbfunc1), None)
+
 
 broker_list_dicts1 = e.enchant_broker_list_dicts
-broker_list_dicts1.argtypes = [t_broker,t_dict_desc_func,c_void_p]
+broker_list_dicts1.argtypes = [t_broker, t_dict_desc_func, c_void_p]
 broker_list_dicts1.restype = None
-def broker_list_dicts(broker,cbfunc):
+
+
+def broker_list_dicts(broker, cbfunc):
     def cbfunc1(*args):
         cbfunc(*args[:-1])
-    broker_list_dicts1(broker,t_dict_desc_func(cbfunc1),None)
+
+    broker_list_dicts1(broker, t_dict_desc_func(cbfunc1), None)
+
 
 try:
     broker_get_param = e.enchant_broker_get_param
 except AttributeError:
     #  Make the lookup error occur at runtime
-    def broker_get_param(broker,param_name):
-        return e.enchant_broker_get_param(param_name)
+    def broker_get_param(broker, name):
+        return e.enchant_broker_get_param(broker, name)
+
+
 else:
-    broker_get_param.argtypes = [t_broker,c_char_p]
+    broker_get_param.argtypes = [t_broker, c_char_p]
     broker_get_param.restype = c_char_p
 
 try:
     broker_set_param = e.enchant_broker_set_param
 except AttributeError:
     #  Make the lookup error occur at runtime
-    def broker_set_param(broker,param_name):
-        return e.enchant_broker_set_param(param_name)
+    def broker_set_param(broker, name, value):
+        return e.enchant_broker_set_param(broker, name, value)
+
+
 else:
-    broker_set_param.argtypes = [t_broker,c_char_p,c_char_p]
+    broker_set_param.argtypes = [t_broker, c_char_p, c_char_p]
     broker_set_param.restype = None
 
 try:
@@ -251,82 +275,137 @@ except AttributeError:
     #  Make the lookup error occur at runtime
     def get_version():
         return e.enchant_get_version()
+
+
 else:
     get_version.argtypes = []
     get_version.restype = c_char_p
 
+try:
+    set_prefix_dir = e.enchant_set_prefix_dir
+except AttributeError:
+    #  Make the lookup error occur at runtime
+    def set_prefix_dir(path):
+        return e.enchant_set_prefix_dir(path)
+
+
+else:
+    set_prefix_dir.argtypes = [c_char_p]
+    set_prefix_dir.restype = None
+
+try:
+    get_user_config_dir = e.enchant_get_user_config_dir
+except AttributeError:
+    #  Make the lookup error occur at runtime
+    def get_user_config_dir():
+        return e.enchant_get_user_config_dir()
+
+
+else:
+    get_user_config_dir.argtypes = []
+    get_user_config_dir.restype = c_char_p
 
 dict_check1 = e.enchant_dict_check
-dict_check1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_check1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_check1.restype = c_int
-def dict_check(dict,word):
-    return dict_check1(dict,word,len(word))
+
+
+def dict_check(dict, word):
+    return dict_check1(dict, word, len(word))
+
 
 dict_suggest1 = e.enchant_dict_suggest
-dict_suggest1.argtypes = [t_dict,c_char_p,c_size_t,POINTER(c_size_t)]
+dict_suggest1.argtypes = [t_dict, c_char_p, c_size_t, POINTER(c_size_t)]
 dict_suggest1.restype = POINTER(c_char_p)
-def dict_suggest(dict,word):
-    numSuggsP = pointer(c_size_t(0))
-    suggs_c = dict_suggest1(dict,word,len(word),numSuggsP)
+
+
+def dict_suggest(dict, word):
+    num_suggs_p = pointer(c_size_t(0))
+    suggs_c = dict_suggest1(dict, word, len(word), num_suggs_p)
     suggs = []
     n = 0
-    while n < numSuggsP.contents.value:
+    while n < num_suggs_p.contents.value:
         suggs.append(suggs_c[n])
         n = n + 1
-    if numSuggsP.contents.value > 0:
-        dict_free_string_list(dict,suggs_c)
+    if num_suggs_p.contents.value > 0:
+        dict_free_string_list(dict, suggs_c)
     return suggs
 
+
 dict_add1 = e.enchant_dict_add
-dict_add1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_add1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_add1.restype = None
-def dict_add(dict,word):
-    return dict_add1(dict,word,len(word))
+
+
+def dict_add(dict, word):
+    return dict_add1(dict, word, len(word))
+
 
 dict_add_to_pwl1 = e.enchant_dict_add
-dict_add_to_pwl1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_add_to_pwl1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_add_to_pwl1.restype = None
-def dict_add_to_pwl(dict,word):
-    return dict_add_to_pwl1(dict,word,len(word))
+
+
+def dict_add_to_pwl(dict, word):
+    return dict_add_to_pwl1(dict, word, len(word))
+
 
 dict_add_to_session1 = e.enchant_dict_add_to_session
-dict_add_to_session1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_add_to_session1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_add_to_session1.restype = None
-def dict_add_to_session(dict,word):
-    return dict_add_to_session1(dict,word,len(word))
+
+
+def dict_add_to_session(dict, word):
+    return dict_add_to_session1(dict, word, len(word))
+
 
 dict_remove1 = e.enchant_dict_remove
-dict_remove1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_remove1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_remove1.restype = None
-def dict_remove(dict,word):
-    return dict_remove1(dict,word,len(word))
+
+
+def dict_remove(dict, word):
+    return dict_remove1(dict, word, len(word))
+
 
 dict_remove_from_session1 = e.enchant_dict_remove_from_session
-dict_remove_from_session1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_remove_from_session1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_remove_from_session1.restype = c_int
-def dict_remove_from_session(dict,word):
-    return dict_remove_from_session1(dict,word,len(word))
+
+
+def dict_remove_from_session(dict, word):
+    return dict_remove_from_session1(dict, word, len(word))
+
 
 dict_is_added1 = e.enchant_dict_is_added
-dict_is_added1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_is_added1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_is_added1.restype = c_int
-def dict_is_added(dict,word):
-    return dict_is_added1(dict,word,len(word))
+
+
+def dict_is_added(dict, word):
+    return dict_is_added1(dict, word, len(word))
+
 
 dict_is_removed1 = e.enchant_dict_is_removed
-dict_is_removed1.argtypes = [t_dict,c_char_p,c_size_t]
+dict_is_removed1.argtypes = [t_dict, c_char_p, c_size_t]
 dict_is_removed1.restype = c_int
-def dict_is_removed(dict,word):
-    return dict_is_removed1(dict,word,len(word))
+
+
+def dict_is_removed(dict, word):
+    return dict_is_removed1(dict, word, len(word))
+
 
 dict_store_replacement1 = e.enchant_dict_store_replacement
-dict_store_replacement1.argtypes = [t_dict,c_char_p,c_size_t,c_char_p,c_size_t]
+dict_store_replacement1.argtypes = [t_dict, c_char_p, c_size_t, c_char_p, c_size_t]
 dict_store_replacement1.restype = None
-def dict_store_replacement(dict,mis,cor):
-    return dict_store_replacement1(dict,mis,len(mis),cor,len(cor))
+
+
+def dict_store_replacement(dict, mis, cor):
+    return dict_store_replacement1(dict, mis, len(mis), cor, len(cor))
+
 
 dict_free_string_list = e.enchant_dict_free_string_list
-dict_free_string_list.argtypes = [t_dict,POINTER(c_char_p)]
+dict_free_string_list.argtypes = [t_dict, POINTER(c_char_p)]
 dict_free_string_list.restype = None
 
 dict_get_error = e.enchant_dict_get_error
@@ -334,10 +413,12 @@ dict_get_error.argtypes = [t_dict]
 dict_get_error.restype = c_char_p
 
 dict_describe1 = e.enchant_dict_describe
-dict_describe1.argtypes = [t_dict,t_dict_desc_func,c_void_p]
+dict_describe1.argtypes = [t_dict, t_dict_desc_func, c_void_p]
 dict_describe1.restype = None
-def dict_describe(dict,cbfunc):
-    def cbfunc1(tag,name,desc,file,data):
-        cbfunc(tag,name,desc,file)
-    dict_describe1(dict,t_dict_desc_func(cbfunc1),None)
 
+
+def dict_describe(dict, cbfunc):
+    def cbfunc1(tag, name, desc, file, data):
+        cbfunc(tag, name, desc, file)
+
+    dict_describe1(dict, t_dict_desc_func(cbfunc1), None)
