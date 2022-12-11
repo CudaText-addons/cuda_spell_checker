@@ -57,7 +57,7 @@ def is_word_alpha(s):
 
     return True
 
-def caret_info():
+def caret_info(ed):
     x, y, x2, y2 = ed.get_carets()[0]
     line = ed.get_text_line(y)
     if not line: return
@@ -65,28 +65,30 @@ def caret_info():
 
     n1 = x
     n2 = x + 1
-    while n1 > 0 and is_word_char(line[n1 - 1])    : n1 -= 1
-    while n2 < len(line) and is_word_char(line[n2]): n2 += 1
+    while n1 > 0 and is_word_char(line[n1 - 1]):
+        n1 -= 1
+    while n2 < len(line) and is_word_char(line[n2]):
+        n2 += 1
     x = n1
 
     return locals()
 
-def get_current_word_under_caret():
-    info = caret_info()
+def get_current_word_under_caret(ed):
+    info = caret_info(ed)
     if not info: return None
     return info['line'][info['n1']:info['n2']]
 
-def replace_current_word_with_word(word, info):
+def replace_current_word_with_word(ed, word, info):
     def inner():
         ed.replace(info['n1'], info['y'], info['n2'], info['y'], word)
     return inner
 
-def context_menu(reset = False):
+def context_menu(ed, reset):
     if reset:
         visible = False
     else:
-        info = caret_info()
-        word = get_current_word_under_caret()
+        info = caret_info(ed)
+        word = get_current_word_under_caret(ed)
         if not word: return
         no_suggestions_found = _("No suggestions found")
         visible = not dict_obj.check(word) # only visible if incorrect word
@@ -106,7 +108,7 @@ def context_menu(reset = False):
 
     suggestions=dict_obj.suggest(word)
     for suggestion in dict_obj.suggest(word):
-        menu_proc(spelling, MENU_ADD, command = replace_current_word_with_word(suggestion, info), caption = suggestion)
+        menu_proc(spelling, MENU_ADD, command = replace_current_word_with_word(ed, suggestion, info), caption = suggestion)
 
     if suggestions == []: menu_proc(spelling, MENU_ADD, caption = "("+no_suggestions_found+")")
 
@@ -153,8 +155,10 @@ def dlg_spell(sub):
 
 def dlg_select_dict():
     items = sorted(enchant.list_languages())
-    if op_lang in items: focused = items.index(op_lang)
-    else               : focused = -1
+    if op_lang in items:
+        focused = items.index(op_lang)
+    else:
+        focused = -1
     res = dlg_menu(DMENU_LIST, items, focused, caption=_('Select dictionary'))
     if res is None: return
     return items[res]
@@ -296,7 +300,8 @@ def do_work(ed, with_dialog):
 
         res = do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens)
         if res is None:
-            if with_dialog and (count_all > 0): reset_carets(carets)
+            if with_dialog and (count_all > 0):
+                reset_carets(ed, carets)
             return
         count_all     += res[0]
         count_replace += res[1]
@@ -318,9 +323,11 @@ def do_work(ed, with_dialog):
     msg_sel = _('selection only') if is_selection else _('all text')
     msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace))
 
-    if with_dialog and (count_all > 0): reset_carets(carets)
+    if with_dialog and (count_all > 0):
+        reset_carets(ed, carets)
 
-def reset_carets(carets):
+
+def reset_carets(ed, carets):
     c = carets[0]
     ed.set_caret(*c)
     for c in carets[1:]:
@@ -330,13 +337,13 @@ def do_work_if_name(ed_self):
     if is_filetype_ok(ed_self.get_filename()):
         do_work(ed_self, False)
 
-def do_work_word(with_dialog):
-    info = caret_info()
+def do_work_word(ed, with_dialog):
+    info = caret_info(ed)
     if not info:
         msg_status(_('Caret not on word-char'))
         return
 
-    sub = get_current_word_under_caret()
+    sub = get_current_word_under_caret(ed)
     if not is_word_alpha(sub):
         msg_status(_('Not text-word under caret'))
         return
@@ -404,11 +411,11 @@ class Command:
 
     def check_word(self):
         Command.active = True
-        do_work_word(False)
+        do_work_word(ed, False)
 
     def check_word_suggest(self):
         Command.active = True
-        do_work_word(True)
+        do_work_word(ed, True)
 
     def on_open(self, ed_self):
         do_work_if_name(ed_self)
@@ -416,8 +423,8 @@ class Command:
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self)
 
-    def on_click(self,ed_self,state):
-        context_menu()
+    def on_click(self, ed_self, state):
+        context_menu(ed_self, False)
 
     def select_dict(self):
         global op_lang
@@ -479,7 +486,7 @@ class Command:
     def del_marks(self):
         Command.active = False
         ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
-        context_menu(True) # reset context menu
+        context_menu(ed, True) # reset context menu
 
     '''
     def toggle_hilite(self):
