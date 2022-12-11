@@ -204,17 +204,23 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
     n1 = x_start - 1
     while True:
         n1 += 1
-        if n1 >= len(line)           : break
-        if (x_end >= 0) and (n1 >= x_end): break
-        if not is_word_char(line[n1]): continue
+        if n1 >= len(line):
+            break
+        if (x_end >= 0) and (n1 >= x_end):
+            break
+        if not is_word_char(line[n1]):
+            continue
         n2 = n1 + 1
-        while n2 < len(line) and is_word_char(line[n2]): n2 += 1
+        while n2 < len(line) and is_word_char(line[n2]):
+            n2 += 1
 
-        if line[n1]     == "'": n1 += 1   #strip quote from begin of word
-        x_pos = n1                        #start of actual word
-        n1 = n2                           #new start pos for next word
+        if line[n1] == "'":
+            n1 += 1   #strip quote from begin of word
+        x_pos = n1    #start of actual word
+        n1 = n2       #new start pos for next word
 
-        if line[n2 - 1] == "'": n2 -= 1   #strip quote from end of word
+        if line[n2 - 1] == "'":
+            n2 -= 1   #strip quote from end of word
         sub = line[x_pos:n2]
 
         url_found, url_end = is_url(x_pos)
@@ -224,10 +230,16 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
 
         if check_tokens:
             kind = ed.get_token(TOKEN_GET_KIND, x_pos, nline)
-            if kind not in ('c', 's'): continue
+            if kind not in ('c', 's'):
+                #print('check_line: not OK token kind:', kind, '; line', nline, '; x', x_pos)
+                continue
 
-        if not is_word_alpha(sub): continue
-        if dict_obj.check(sub)   : continue
+        if not is_word_alpha(sub):
+            #print('check_line: not is_word_alpha:', sub)
+            continue
+        if dict_obj.check(sub):
+            #print('check_line: check off:', sub)
+            continue
 
         count += 1
         if with_dialog:
