@@ -250,7 +250,7 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
 
     return (count, replaced, res_x, res_y, res_n)
 
-def do_work(ed, with_dialog):
+def do_work(ed, with_dialog, allow_in_sel):
     count_all = 0
     count_replace = 0
     percent = 0
@@ -261,7 +261,7 @@ def do_work(ed, with_dialog):
     if not carets: return
     x1, y1, x2, y2 = carets[0]
 
-    is_selection = y2 >= 0
+    is_selection = allow_in_sel and (y2 >= 0)
 
     if is_selection:
         if (y1, x1) > (y2, x2):
@@ -333,9 +333,9 @@ def reset_carets(ed, carets):
     for c in carets[1:]:
         ed.set_caret(*c, CARET_ADD)
 
-def do_work_if_name(ed_self):
+def do_work_if_name(ed_self, allow_in_sel):
     if is_filetype_ok(ed_self.get_filename()):
-        do_work(ed_self, False)
+        do_work(ed_self, False, allow_in_sel)
 
 def do_work_word(ed, with_dialog):
     info = caret_info(ed)
@@ -403,11 +403,11 @@ class Command:
 
     def check(self):
         Command.active = True
-        do_work(ed, False)
+        do_work(ed, False, True)
 
     def check_suggest(self):
         Command.active = True
-        do_work(ed, True)
+        do_work(ed, True, True)
 
     def check_word(self):
         Command.active = True
@@ -418,10 +418,10 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        do_work_if_name(ed_self)
+        do_work_if_name(ed_self, False)
 
     def on_change_slow(self, ed_self):
-        do_work_if_name(ed_self)
+        do_work_if_name(ed_self, False)
 
     def on_click(self, ed_self, state):
         context_menu(ed_self, False)
@@ -435,7 +435,8 @@ class Command:
         op_lang = res
         ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
-        if Command.active: do_work_if_name(ed)
+        if Command.active:
+            do_work_if_name(ed, False)
 
     def config(self):
         ini_write(filename_ini, 'op', 'lang'               , op_lang)
