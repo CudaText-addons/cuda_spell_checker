@@ -246,8 +246,10 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
             ed.set_caret(x_pos, nline, x_pos + len(sub), nline)
             rep = dlg_spell(sub)
 
-            if rep is None: return   #stop all work
-            if rep == ''  : continue #to next word
+            if rep is None:
+                return   #stop all work
+            if rep == '':
+                continue #to next word
 
             #replace
             replaced += 1
@@ -262,12 +264,27 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
 
     return (count, replaced, res_x, res_y, res_n)
 
-def do_work(ed, with_dialog, allow_in_sel):
+
+timer_editors = []
+def timer_check(tag='', info=''):
+    global timer_editors
+    for ed in timer_editors:
+        do_work(ed, False, False)
+    timer_editors = []
+
+    
+def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     count_all = 0
     count_replace = 0
     percent = 0
     app_proc(PROC_SET_ESCAPE, False)
     check_tokens = need_check_tokens(ed)
+
+    # opening of Markdown file at startup gives not yet parsed file, so check fails
+    if check_tokens and allow_timer:
+        timer_editors.append(ed)
+        timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=1000)
+        return
 
     carets = ed.get_carets()
     if not carets: return
@@ -345,9 +362,9 @@ def reset_carets(ed, carets):
     for c in carets[1:]:
         ed.set_caret(*c, CARET_ADD)
 
-def do_work_if_name(ed_self, allow_in_sel):
+def do_work_if_name(ed_self, allow_in_sel, allow_timer=False):
     if is_filetype_ok(ed_self.get_filename()):
-        do_work(ed_self, False, allow_in_sel)
+        do_work(ed_self, False, allow_in_sel, allow_timer)
 
 def do_work_word(ed, with_dialog):
     info = caret_info(ed)
@@ -430,7 +447,7 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        do_work_if_name(ed_self, False)
+        do_work_if_name(ed_self, False, True)
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self, False)
