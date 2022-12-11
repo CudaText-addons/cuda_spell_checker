@@ -1,3 +1,6 @@
+2022.12.11
+- fix: when editor opens N>1 tabs from startup session, only one of them was checked by Spell Checker
+
 2022.11.29
 * change: update Enchant to v2.2.7 in order to be able to store words in user defined dictionaries under Windows (patch from @dinkumoil)
 

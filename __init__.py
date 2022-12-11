@@ -246,7 +246,7 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
 
     return (count, replaced, res_x, res_y, res_n)
 
-def do_work(with_dialog = False):
+def do_work(ed, with_dialog):
     count_all = 0
     count_replace = 0
     percent = 0
@@ -328,7 +328,7 @@ def reset_carets(carets):
 
 def do_work_if_name(ed_self):
     if is_filetype_ok(ed_self.get_filename()):
-        do_work()
+        do_work(ed_self, False)
 
 def do_work_word(with_dialog):
     info = caret_info()
@@ -396,11 +396,11 @@ class Command:
 
     def check(self):
         Command.active = True
-        do_work()
+        do_work(ed, False)
 
     def check_suggest(self):
         Command.active = True
-        do_work(True)
+        do_work(ed, True)
 
     def check_word(self):
         Command.active = True
