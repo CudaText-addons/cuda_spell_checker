@@ -129,6 +129,7 @@ About
 
 Authors:
   Alexey Torgashin (CudaText)
-  CudaText forum member A:C
+  Andreas Heim (https://github.com/dinkumoil) added the Enchant Windows DLL support
+  CudaText forum member A:C made the big refactoring
   
 License: MIT
