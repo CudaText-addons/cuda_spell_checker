@@ -5,9 +5,9 @@ type=cudatext-plugin
 subdir=cuda_spell_checker
 homepage=https://github.com/CudaText-addons/cuda_spell_checker
 
-;[item1]
-;section=events
-;events=
+[item1]
+section=events
+events=on_click_right~
 
 [item10]
 section=commands
