@@ -1,5 +1,5 @@
 2022.12.25
-+ add: use new CudaText (1.180.2+) event on_click_right, so setting "handle on_click" was removed; also this fixed lags on fast clicking in CudaText
++ add: use new CudaText (1.181+) event on_click_right, so setting "handle on_click" was removed; also this fixed lags on fast clicking in CudaText
 
 2022.12.11
 - fix: when editor opens N>1 tabs from startup session, only one of them was checked by Spell Checker
