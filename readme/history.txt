@@ -1,3 +1,6 @@
+2023.02.23
++ add: even with CudaText option "mouse_rt_click_moves_caret":false, plugin correctly updates context menu "Spelling" submenu on right clicks
+
 2022.12.25
 + add: use new CudaText (1.181+) event on_click_right, so setting "handle on_click" was removed; also this fixed lags on fast clicking in CudaText
 
