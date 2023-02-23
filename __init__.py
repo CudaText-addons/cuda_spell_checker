@@ -57,8 +57,15 @@ def is_word_alpha(s):
 
     return True
 
-def caret_info(ed):
-    x, y, x2, y2 = ed.get_carets()[0]
+def caret_info(ed, r_click=False):
+    if r_click:
+        x, y = app_proc(PROC_GET_MOUSE_POS, '')
+        x, y = ed.convert(CONVERT_SCREEN_TO_LOCAL, x, y)
+        x, y = ed.convert(CONVERT_PIXELS_TO_CARET, x, y)
+        x2, y2 = -1, -1
+    else:
+        x, y, x2, y2 = ed.get_carets()[0]
+
     line = ed.get_text_line(y)
     if not line: return
     if not (0 <= x < len(line)) or not is_word_char(line[x]): return None
@@ -73,10 +80,10 @@ def caret_info(ed):
 
     return locals()
 
-def get_current_word_under_caret(ed):
-    info = caret_info(ed)
-    if not info: return None
-    return info['line'][info['n1']:info['n2']]
+def get_current_word_under_caret(ed, r_click=False):
+    info = caret_info(ed, r_click)
+    if info:
+        return info['line'][info['n1']:info['n2']]
 
 def replace_current_word_with_word(ed, word, info):
     def inner():
@@ -87,8 +94,9 @@ def context_menu(ed, reset):
     if reset:
         visible = False
     else:
-        info = caret_info(ed)
-        word = get_current_word_under_caret(ed)
+        info = caret_info(ed, True)
+        if not info: return
+        word = info['line'][info['n1']:info['n2']]
         if not word: return
         no_suggestions_found = _("No suggestions found")
         visible = not dict_obj.check(word) # only visible if incorrect word
