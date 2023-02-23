@@ -99,7 +99,8 @@ def context_menu(ed, reset):
         if key['cap'] == submenu_title:
             spelling = key['id']
             break
-    if not spelling: spelling = menu_proc("text", MENU_ADD, caption = submenu_title, index = 0)
+    if not spelling:
+        spelling = menu_proc("text", MENU_ADD, caption = submenu_title, index = 0)
 
     menu_proc(spelling, MENU_CLEAR)
     menu_proc(spelling, MENU_SET_VISIBLE, command = visible)
@@ -110,7 +111,8 @@ def context_menu(ed, reset):
     for suggestion in dict_obj.suggest(word):
         menu_proc(spelling, MENU_ADD, command = replace_current_word_with_word(ed, suggestion, info), caption = suggestion)
 
-    if suggestions == []: menu_proc(spelling, MENU_ADD, caption = "("+no_suggestions_found+")")
+    if suggestions == []:
+        menu_proc(spelling, MENU_ADD, caption = "("+no_suggestions_found+")")
 
 def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
