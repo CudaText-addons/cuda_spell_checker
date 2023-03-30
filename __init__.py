@@ -122,12 +122,71 @@ def context_menu(ed, reset):
     if suggestions == []:
         menu_proc(spelling, MENU_ADD, caption = "("+no_suggestions_found+")")
 
+dialog_pos = None
+dialog_visible = False
+
+def dlg_create():
+    h = dlg_proc(0, DLG_CREATE)
+    dlg_proc(h, DLG_PROP_SET, prop={'cap': _('Misspelled word'), 'w': 430, 'h': 300})
+    
+    # restore dialog position
+    global dialog_pos
+    if dialog_pos:
+        dlg_proc(h, DLG_PROP_SET, prop={'x': dialog_pos[0], 'y': dialog_pos[1]})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'panel')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel3', 'w': 130, 'h': 200, 'x': 330, 'y': 10, 'a_l': None, 'a_r': ('', ']'), 'a_b': ('', ']'), 'sp_a': 6})
+
+    n = dlg_proc(h, DLG_CTL_ADD, 'panel')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel1', 'w': 90, 'h': 200, 'x': 10, 'y': 10, 'a_b': ('', ']'), 'sp_a': 6})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'panel')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel2', 'h': 200, 'x': 170, 'y': 10,
+    'a_l': ('panel1', ']'), 'a_r': ('panel3', '['), 'a_b': ('', ']'), 'sp_a': 6, 'tab_order': 0})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'label')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_not_found', 'cap': _('Not found:'), 'x': 0, 'y': 10, 'p': 'panel1'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'label')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_custom_text', 'cap': _('C&ustom text:'), 'x': 0, 'y': 40, 'p': 'panel1'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'label')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_suggestions', 'cap': _('Su&ggestions:'), 'x': 0, 'y': 70, 'p': 'panel1'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'edit')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'edit2', 'x': 0, 'y': 40, 'w': 150, 'h': 25, 'a_r': ('', ']'), 'p': 'panel2'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'listbox')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'list1', 'x': 0, 'y': 70, 'w': 150, 'h': 100, 'a_r': ('', ']'), 'a_b': ('', ']'), 'p': 'panel2'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'edit')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'edit1', 'x': 0, 'y': 10, 'w': 150, 'h': 25, 'ex0': True, 'a_r': ('', ']'), 'p': 'panel2',
+    'tab_stop': -1})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'button')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_ignore', 'cap': _('&Ignore'), 'x': 0, 'y': 70, 'h': 25, 'p': 'panel3', 'a_r': ('',']'),
+    'ex0': True})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'button')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_change', 'cap': _('&Change'), 'x': 0, 'y': 100, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'button')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_add', 'cap': _('&Add'), 'x': 0, 'y': 130, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'button')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_cancel', 'cap': _('Cancel'), 'x': 0, 'y': 190, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    
+    return h
+
 def dlg_spell(sub):
+    global dialog_visible
+    if dialog_visible:
+        return
+
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
     if not en_list: rep_list = []
-
-    c1 = chr(1)
+    
     RES_TEXT        = 3
     RES_WORDLIST    = 5
     RES_BTN_SKIP    = 6
@@ -135,22 +194,32 @@ def dlg_spell(sub):
     RES_BTN_ADD     = 8
     RES_BTN_CANCEL  = 9
 
-    res = dlg_custom(_('Misspelled word'), 426, 306, '\n'.join([]
-        +[c1.join(['type=label'  , 'pos=6,8,100,0'     , 'cap=' + _('Not found:')])]
-        +[c1.join(['type=edit'   , 'pos=106,6,300,0'   , 'cap=' + sub, 'ex0=1', 'ex1=0', 'ex2=1'])]
-        +[c1.join(['type=label'  , 'pos=6,38,100,0'    , 'cap=' + _('C&ustom text:')])]
-        +[c1.join(['type=edit'   , 'pos=106,36,300,0'  , 'val='])]
-        +[c1.join(['type=label'  , 'pos=6,68,100,0'    , 'cap=' + _('Su&ggestions:')])]
-        +[c1.join(['type=listbox', 'pos=106,66,300,300', 'items=' + '\t'.join(rep_list), 'val=' + ('0' if en_list else '-1')])]
-        +[c1.join(['type=button' , 'pos=306,66,420,0'  , 'cap=' + _('&Ignore'), 'ex0=1'])]
-        +[c1.join(['type=button' , 'pos=306,96,420,0'  , 'cap=' + _('&Change')])]
-        +[c1.join(['type=button' , 'pos=306,126,420,0' , 'cap=' + _('&Add')])]
-        +[c1.join(['type=button' , 'pos=306,186,420,0' , 'cap=' + _('Cancel')])]
-        ), 3, get_dict = True)
-
-    if res is None: return
-    btn = res['clicked']
-
+    h_dlg = dlg_create()
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='edit1', prop={'val': sub})
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='list1', prop={'items': '\t'.join(rep_list), 'val': ('0' if en_list else '-1')})
+    
+    btn = None
+    def on_button(_btn):
+        nonlocal btn
+        btn = _btn
+        dlg_proc(h_dlg, DLG_HIDE)
+    
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_ignore', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_SKIP)})
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_change', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_REPLACE)})
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_add', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_ADD)})
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_cancel', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_CANCEL)})
+    
+    dlg_proc(h_dlg, DLG_SCALE)
+    
+    dialog_visible = True
+    dlg_proc(h_dlg, DLG_SHOW_MODAL)
+    dialog_visible = False
+    
+    # remember dialog position
+    props = dlg_proc(h_dlg, DLG_PROP_GET)
+    global dialog_pos
+    dialog_pos = (props['x'],props['y'])
+    
     if btn == RES_BTN_SKIP: return ''
 
     if btn == RES_BTN_ADD:
@@ -158,10 +227,13 @@ def dlg_spell(sub):
         return ''
 
     if btn == RES_BTN_REPLACE:
-        word = res[RES_TEXT]
+        word = dlg_proc(h_dlg, DLG_CTL_PROP_GET, name='edit2')['val']
+        list_index = dlg_proc(h_dlg, DLG_CTL_PROP_GET, name='list1')['val']
         if word   : return word
-        if en_list: return rep_list[int(res[RES_WORDLIST])]
+        if en_list: return rep_list[int(list_index)]
         else      : return ''
+
+    dlg_proc(h_dlg, DLG_FREE)
 
 def dlg_select_dict():
     items = sorted(enchant.list_languages())
@@ -284,19 +356,23 @@ def timer_check(tag='', info=''):
 
     
 def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
+    # work only with remembered editor, until work is finished
+    h_ed = ed.get_prop(PROP_HANDLE_SELF)
+    editor = Editor(h_ed)
+    
     count_all = 0
     count_replace = 0
     percent = 0
     app_proc(PROC_SET_ESCAPE, False)
-    check_tokens = need_check_tokens(ed)
+    check_tokens = need_check_tokens(editor)
 
     # opening of Markdown file at startup gives not yet parsed file, so check fails
     if check_tokens and allow_timer:
-        timer_editors.append(ed)
+        timer_editors.append(editor)
         timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=1000)
         return
 
-    carets = ed.get_carets()
+    carets = editor.get_carets()
     if not carets: return
     x1, y1, x2, y2 = carets[0]
 
@@ -308,13 +384,13 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
         y2 += 1                      # last line has to be included (range)
         total_lines = y2 - y1
     else:
-        total_lines = ed.get_line_count()
+        total_lines = editor.get_line_count()
         x1 = 0
         x2 = -1
         y1 = 0
         y2 = total_lines
 
-    ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)   # delete all, otherwise inserting additional markers takes a long time
+    editor.attr(MARKERS_DELETE_BY_TAG, MARKTAG)   # delete all, otherwise inserting additional markers takes a long time
 
     res_x = []
     res_y = []
@@ -337,10 +413,10 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
         x_start = x1 if nline == y1 else 0
         x_end = x2 if nline == y2 - 1 else -1
 
-        res = do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens)
+        res = do_check_line(editor, nline, x_start, x_end, with_dialog, check_tokens)
         if res is None:
             if with_dialog and (count_all > 0):
-                reset_carets(ed, carets)
+                reset_carets(editor, carets)
             return
         count_all     += res[0]
         count_replace += res[1]
@@ -349,7 +425,7 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
         res_n         += res[4]
 
     # setting all markers at once is a bit faster than line by line
-    ed.attr(
+    editor.attr(
         MARKERS_ADD_MANY, MARKTAG,
         res_x, res_y, res_n,
         COLOR_NONE, COLOR_NONE, op_underline_color,
@@ -363,7 +439,7 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace))
 
     if with_dialog and (count_all > 0):
-        reset_carets(ed, carets)
+        reset_carets(editor, carets)
 
 
 def reset_carets(ed, carets):
