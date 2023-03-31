@@ -296,13 +296,17 @@ def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
         while n2 < len(line) and is_word_char(line[n2]):
             n2 += 1
 
-        if line[n1] == "'":
-            n1 += 1   #strip quote from begin of word
+        #strip quote from begin of word
+        while (n1 < len(line)) and line[n1] == "'":
+            n1 += 1
+
         x_pos = n1    #start of actual word
         n1 = n2       #new start pos for next word
 
-        if line[n2 - 1] == "'":
-            n2 -= 1   #strip quote from end of word
+        #strip quote from end of word
+        while line[n2 - 1] == "'":
+            n2 -= 1
+
         sub = line[x_pos:n2]
 
         url_found, url_end = is_url(x_pos)
