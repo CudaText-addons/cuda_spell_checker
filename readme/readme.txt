@@ -15,13 +15,19 @@ It's possible to install additional dictionaries:
 https://github.com/titoBouzout/Dictionaries
 Rename files to short names, e.g. Russian.* to ru.* or ru_RU.*
 Copy files to folder:
+
 - on Windows:
   32-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x86\data\share\enchant\hunspell\
   64-bit CudaText: CudaText\py\cuda_spell_checker\enchant_x64\data\share\enchant\hunspell\
-- on Unix:
+
+- on Linux/Unix:
   ~/.enchant/myspell
   or
   ~/.config/enchant
+
+On Linux/Unix, you need additionally to install package: hunspell, hunspell-<LANGUAGE>.
+For example, for Russian language and Debian OS:
+$ sudo apt-get install hunspell-ru
 
 
 Menu items
