@@ -23,6 +23,8 @@ Copy files to folder:
   or
   ~/.config/enchant
 
+For Unix, you may need to additionally install the package: hunspell, hunspell-<YOUR_LANG>
+Example for Russian-Dic and Debian-OS: sudo apt-get install hunspell-ru
 
 Menu items
 ==========
