@@ -150,11 +150,11 @@ def dlg_create():
     n = dlg_proc(h, DLG_CTL_ADD, 'label')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_custom_text', 'cap': _('C&ustom text:'), 'x': 0, 'y': 40, 'p': 'panel1'})
     
-    n = dlg_proc(h, DLG_CTL_ADD, 'label')
-    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_suggestions', 'cap': _('Su&ggestions:'), 'x': 0, 'y': 70, 'p': 'panel1'})
-    
     n = dlg_proc(h, DLG_CTL_ADD, 'edit')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'edit2', 'x': 0, 'y': 40, 'w': 150, 'h': 25, 'a_r': ('', ']'), 'p': 'panel2'})
+    
+    n = dlg_proc(h, DLG_CTL_ADD, 'label')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_suggestions', 'cap': _('Su&ggestions:'), 'x': 0, 'y': 70, 'p': 'panel1'})
     
     n = dlg_proc(h, DLG_CTL_ADD, 'listbox')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'list1', 'x': 0, 'y': 70, 'w': 150, 'h': 100, 'a_r': ('', ']'), 'a_b': ('', ']'), 'p': 'panel2'})
