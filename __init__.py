@@ -41,6 +41,7 @@ try:
     dict_obj = enchant.Dict(op_lang)
 except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
+    dict_obj = None
 
 MARKTAG = 105 #unique int for all marker plugins
 
@@ -91,6 +92,9 @@ def replace_current_word_with_word(ed, word, info):
     return inner
 
 def context_menu(ed, reset):
+    if dict_obj is None:
+        return
+
     if reset:
         visible = False
     else:
@@ -183,6 +187,10 @@ def dlg_spell(sub):
     if dialog_visible:
         return
 
+    if dict_obj is None:
+        msg_status(_('Spell Checker dictionary was not inited'))
+        return
+
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
     if not en_list: rep_list = []
@@ -264,6 +272,8 @@ def need_check_tokens(ed):
         return False
 
 def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
+    if dict_obj is None:
+        return
     count = 0
     replaced = 0
     res_x = []
@@ -457,6 +467,9 @@ def do_work_if_name(ed_self, allow_in_sel, allow_timer=False):
         do_work(ed_self, False, allow_in_sel, allow_timer)
 
 def do_work_word(ed, with_dialog):
+    if dict_obj is None:
+        msg_status(_('Spell Checker dictionary was not inited'))
+        return
     info = caret_info(ed)
     if not info:
         msg_status(_('Caret not on word-char'))
