@@ -1,3 +1,6 @@
+2025.06.07
+- fix: bug with right-click menu on empty space: 'Spelling' submenu was not updated (thanks @riven)
+
 2023.03.30
 + add: dialog 'Misspelled word' now uses dlg_proc API - now dialog position is kept during the app session (patch by @veksha)
 - fix: if user clicks another editor during long spell-checking, checking can continue the work in another editor (patch by @veksha)
