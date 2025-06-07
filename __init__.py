@@ -91,9 +91,20 @@ def replace_current_word_with_word(ed, word, info):
         ed.replace(info['n1'], info['y'], info['n2'], info['y'], word)
     return inner
 
+def find_spell_submenu():
+    submenu_title = _("Spelling")
+    for key in menu_proc("text", MENU_ENUM):
+        if key['cap'] == submenu_title:
+            return key['id']
+
 def context_menu(ed, reset):
     if dict_obj is None:
         return
+
+    spelling = find_spell_submenu()
+    if spelling:
+        menu_proc(spelling, MENU_CLEAR)
+        menu_proc(spelling, MENU_SET_VISIBLE, command = False)
 
     if reset:
         visible = False
@@ -105,16 +116,10 @@ def context_menu(ed, reset):
         no_suggestions_found = _("No suggestions found")
         visible = not dict_obj.check(word) # only visible if incorrect word
 
-    submenu_title = _("Spelling")
-    spelling = None
-    for key in menu_proc("text", MENU_ENUM):
-        if key['cap'] == submenu_title:
-            spelling = key['id']
-            break
     if not spelling:
+        submenu_title = _("Spelling")
         spelling = menu_proc("text", MENU_ADD, caption = submenu_title, index = 0)
 
-    menu_proc(spelling, MENU_CLEAR)
     menu_proc(spelling, MENU_SET_VISIBLE, command = visible)
 
     if not visible: return
