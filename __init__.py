@@ -912,7 +912,7 @@ class Command:
             return
         sorted_misspelled = sorted(misspelled)
         if sorted_misspelled:
-            msg_status(_('Found {} misspelled words, time {:.2f}s').format(count_all, duration))
+            msg_status(_('Found {} misspelled words, {} unique, time {:.2f}s').format(count_all, len(misspelled), duration))
             file_open('')
             ed.set_text_all('\n'.join(sorted_misspelled))
             ed.set_prop(PROP_TAB_TITLE, _("Misspelled words"))
