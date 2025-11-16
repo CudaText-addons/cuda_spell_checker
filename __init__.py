@@ -51,16 +51,17 @@ def load_word_list_temp():
     # i downloaded the wordlist from https://github.com/dwyl/english-words
     # TODO: merge with http://www.aaabbb.de/WordList/WordList_en.php
 
-    txt_path = os.path.join(_mydir, 'wordlists', 'en_US.txt')
+    txt_name = 'en_US.txt' if op_lang.startswith('en') else op_lang+'.txt'
+    txt_path = os.path.join(_mydir, 'wordlists', txt_name)
     if not os.path.exists(txt_path):
-        print(f"Spell Checker: File '{txt_path}' not found. Checking will use Enchant only.")
+        print(f"Spell Checker: Cannot find 'wordlists/{txt_name}'. Checking will use Enchant only.")
         return set()  # Empty set, will fall back to enchant
 
     try:
         # Load all words into a set (case-insensitive by converting to lowercase)
         with open(txt_path, 'r', encoding='utf-8') as f:
             word_list = {line.strip().lower() for line in f if line.strip()}
-        print(f"Spell Checker: Loaded {len(word_list)} words from text file")
+        print(f"Spell Checker: Loaded {len(word_list)} words from 'wordlists/{txt_name}'")
         return word_list
     except Exception as e:
         print(f"Spell Checker: Error loading word list: {e}")
@@ -551,11 +552,7 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     cache = spell_cache if op_use_global_cache else {}  # Use global or local cache based on option
 
     # Load word list temporarily - will be garbage collected after function ends
-    word_list_set = None
-    if op_lang.startswith('en'):
-        word_list_set = load_word_list_temp()
-        # if word_list_set:
-            # print(f"Loaded {len(word_list_set)} words temporarily for spell check")
+    word_list_set = load_word_list_temp()
 
     # opening of Markdown file at startup gives not yet parsed file, so check fails
     if check_tokens and allow_timer:
@@ -691,9 +688,7 @@ def do_work_word(ed, with_dialog):
     y = info['y']
 
     # Load word list temporarily for single word check
-    word_list_set = None
-    if op_lang.startswith('en'):
-        word_list_set = load_word_list_temp()
+    word_list_set = load_word_list_temp()
 
     if with_dialog:
         ed.set_caret(x, y, x + len(sub), y)
@@ -710,10 +705,10 @@ def do_work_word(ed, with_dialog):
         ed.insert(x, y, rep)
     else:
         if fast_spell_check(sub, word_list_set):
-            msg_status(_('Word ok: "%s"') % sub)
+            msg_status(_('Word is Ok: "%s"') % sub)
             marker = MARKERS_DELETE_BY_POS
         else:
-            msg_status(_('Word misspelled: "%s"') % sub)
+            msg_status(_('Word is misspelled: "%s"') % sub)
             marker = MARKERS_ADD
 
         ed.attr(
@@ -848,11 +843,7 @@ class Command:
         cache = spell_cache if op_use_global_cache else {}
 
         # Load word list temporarily
-        word_list_set = None
-        if op_lang.startswith('en'):
-            word_list_set = load_word_list_temp()
-            if word_list_set:
-                print(f"Loaded {len(word_list_set)} words temporarily")
+        word_list_set = load_word_list_temp()
 
         total_text = ed.get_text_all()
         lines = total_text.splitlines()
