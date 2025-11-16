@@ -117,13 +117,14 @@ Plugin has several options in ini-file, call command
 "Options / Settings-plugins / Spell Checker / Config".
 Options are:
 
-- "lang": Current language which user chose in "Select language" command.
-- "underline_style" (0..6): Style of line below words.
-- "confirm_esc_key" (0/1): Allows to show confirmation when user presses Esc during long checking.
+- "lang": Spell-checker language which user chose in the "Select language" dialog, e.g. "en_US".
+- "underline_style" (0..6): Style of lines below misspelled words.
+- "confirm_esc_key" (0/1): Allows to show confirmation when user presses Esc during long spell-checking.
+
 - "file_extension_list": Which files to check automatically, by events (on_change_slow, on_open).
     Possible values:
-    - "" (empty value): Disable for all files.
-    - "*" (star character): Enable for all files.
+    - "" (empty value, without quotes): Disable for all files.
+    - "*" (star character, without quotes): Enable for all files.
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
 
