@@ -5,6 +5,7 @@ import os
 import sys
 import re
 import string
+import time
 from .enchant_architecture import EnchantArchitecture
 from cudatext import *
 
@@ -23,8 +24,10 @@ op_underline_style =         int(ini_read(filename_ini, 'op', 'underline_style' 
 op_confirm_esc     = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key'    , '0'              ))
 op_file_types      =             ini_read(filename_ini, 'op', 'file_extension_list', '*'              )
 op_url_regex       =             ini_read(filename_ini, 'op', 'url_regex'          , r'\bhttps?://\S+')
+op_use_global_cache= str_to_bool(ini_read(filename_ini, 'op', 'use_global_cache'   , '0'              ))
 
 re_url = re.compile(op_url_regex, 0)
+word_re = re.compile(r"[\w']+")
 
 _mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
@@ -35,6 +38,58 @@ if sys.platform == "win32":
 
 sys.path.append(_mydir)
 
+# ============================================================================
+# LOAD ENGLISH WORD LIST INTO A SET FOR FAST LOOKUP
+# ============================================================================
+
+def load_word_list_temp():
+    """
+    Load words_alpha.pkl (or fallback to .txt) into a set for O(1) lookup.
+    This is called only when spell-checking and the set is discarded after use.
+    """
+
+    # i downloaded the wordlist from https://github.com/dwyl/english-words
+    # TODO: merge with http://www.aaabbb.de/WordList/WordList_en.php
+
+    # to use pkl file (which shhould load the words list faster) convert txt to pkl first, but i did not see any speed gain, so i will use the normal txt because it s easier to edit and expand by users if needed
+    # with open('words_alpha.txt', 'r') as f:
+        # words = frozenset(line.strip().lower() for line in f)
+    # import pickle
+    # with open('words_alpha.pkl', 'wb') as f:
+        # pickle.dump(words, f)
+
+
+    pkl_path = os.path.join(_mydir, 'words_alpha.pkl')
+    txt_path = os.path.join(_mydir, 'words_alpha.txt')
+
+    try:
+        if os.path.exists(pkl_path):
+            import pickle
+            with open(pkl_path, 'rb') as f:
+                word_list = pickle.load(f)
+            print(f"Loaded {len(word_list)} words from pickle file (fast)")
+            return word_list
+    except Exception as e:
+        print(f"Error loading pickle file: {e}, falling back to text file")
+
+    # Fallback to text file if pickle doesn't exist or failed
+    if not os.path.exists(txt_path):
+        print(f"Warning: {txt_path} not found. Spell checking will use enchant only.")
+        return set()  # Empty set, will fall back to enchant
+
+    try:
+        # Load all words into a set (case-insensitive by converting to lowercase)
+        with open(txt_path, 'r', encoding='utf-8') as f:
+            word_list = {line.strip().lower() for line in f if line.strip()}
+        print(f"Loaded {len(word_list)} words from text file")
+        return word_list
+    except Exception as e:
+        print(f"Error loading word list: {e}")
+        return set()
+
+# ============================================================================
+# ENCHANT INITIALIZATION
+# ============================================================================
 try:
     enchant = importlib.import_module(_ench)
     #import enchant
@@ -42,6 +97,8 @@ try:
 except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
     dict_obj = None
+
+spell_cache = {}
 
 MARKTAG = 105 #unique int for all marker plugins
 
@@ -125,7 +182,7 @@ def context_menu(ed, reset):
     if not visible: return
 
     suggestions=dict_obj.suggest(word)
-    for suggestion in dict_obj.suggest(word):
+    for suggestion in suggestions:
         menu_proc(spelling, MENU_ADD, command = replace_current_word_with_word(ed, suggestion, info), caption = suggestion)
 
     if suggestions == []:
@@ -137,54 +194,54 @@ dialog_visible = False
 def dlg_create():
     h = dlg_proc(0, DLG_CREATE)
     dlg_proc(h, DLG_PROP_SET, prop={'cap': _('Misspelled word'), 'w': 430, 'h': 300})
-    
+
     # restore dialog position
     global dialog_pos
     if dialog_pos:
         dlg_proc(h, DLG_PROP_SET, prop={'x': dialog_pos[0], 'y': dialog_pos[1]})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'panel')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel3', 'w': 130, 'h': 200, 'x': 330, 'y': 10, 'a_l': None, 'a_r': ('', ']'), 'a_b': ('', ']'), 'sp_a': 6})
 
     n = dlg_proc(h, DLG_CTL_ADD, 'panel')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel1', 'w': 90, 'h': 200, 'x': 10, 'y': 10, 'a_b': ('', ']'), 'sp_a': 6})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'panel')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'panel2', 'h': 200, 'x': 170, 'y': 10,
     'a_l': ('panel1', ']'), 'a_r': ('panel3', '['), 'a_b': ('', ']'), 'sp_a': 6, 'tab_order': 0})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'label')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_not_found', 'cap': _('Not found:'), 'x': 0, 'y': 10, 'p': 'panel1'})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'label')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_custom_text', 'cap': _('C&ustom text:'), 'x': 0, 'y': 40, 'p': 'panel1'})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'edit')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'edit2', 'x': 0, 'y': 36, 'w': 150, 'h': 25, 'a_r': ('', ']'), 'p': 'panel2'})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'label')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'lbl_suggestions', 'cap': _('Su&ggestions:'), 'x': 0, 'y': 70, 'p': 'panel1'})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'listbox')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'list1', 'x': 0, 'y': 70, 'w': 150, 'h': 100, 'a_r': ('', ']'), 'a_b': ('', ']'), 'p': 'panel2'})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'edit')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'edit1', 'x': 0, 'y': 4, 'w': 150, 'h': 25, 'ex0': True, 'a_r': ('', ']'), 'p': 'panel2',
     'tab_stop': -1})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_ignore', 'cap': _('&Ignore'), 'x': 0, 'y': 70, 'h': 25, 'p': 'panel3', 'a_r': ('',']'),
     'ex0': True})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_change', 'cap': _('&Change'), 'x': 0, 'y': 100, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_add', 'cap': _('&Add'), 'x': 0, 'y': 130, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
-    
+
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
     dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_cancel', 'cap': _('Cancel'), 'x': 0, 'y': 190, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
-    
+
     return h
 
 def dlg_spell(sub):
@@ -199,7 +256,7 @@ def dlg_spell(sub):
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
     if not en_list: rep_list = []
-    
+
     RES_TEXT        = 3
     RES_WORDLIST    = 5
     RES_BTN_SKIP    = 6
@@ -210,34 +267,34 @@ def dlg_spell(sub):
     h_dlg = dlg_create()
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='edit1', prop={'val': sub})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='list1', prop={'items': '\t'.join(rep_list), 'val': ('0' if en_list else '-1')})
-    
+
     btn = None
     def on_button(_btn):
         nonlocal btn
         btn = _btn
         dlg_proc(h_dlg, DLG_HIDE)
-    
+
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_ignore', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_SKIP)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_change', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_REPLACE)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_add', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_ADD)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_cancel', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_CANCEL)})
-    
+
     dlg_proc(h_dlg, DLG_SCALE)
-    
+
     dialog_visible = True
     dlg_proc(h_dlg, DLG_SHOW_MODAL)
     dialog_visible = False
-    
+
     # remember dialog position
     props = dlg_proc(h_dlg, DLG_PROP_GET)
     global dialog_pos
     dialog_pos = (props['x'],props['y'])
-    
+
     if btn == RES_BTN_SKIP: return ''
 
     if btn == RES_BTN_ADD:
         dict_obj.add_to_pwl(sub)
-        return ''
+        return 'ADD'
 
     if btn == RES_BTN_REPLACE:
         word = dlg_proc(h_dlg, DLG_CTL_PROP_GET, name='edit2')['val']
@@ -276,94 +333,222 @@ def need_check_tokens(ed):
     else:
         return False
 
-def do_check_line(ed, nline, x_start, x_end, with_dialog, check_tokens):
-    if dict_obj is None:
-        return
+def fast_spell_check(word, word_list_set=None):
+    """
+    Fast spell check using word list + enchant fallback.
+    Returns True if word is correct, False if misspelled.
+
+    Args:
+        word: The word to check
+        word_list_set: Optional word list set. If None, only enchant is used.
+    """
+
+    #TODO rework this
+    if not op_lang.startswith('en') or word_list_set is None:
+        return dict_obj.check(word) if dict_obj else True
+
+
+    #TODO
+    #word_lower = word
+    #"""
+    # Convert to lowercase for case-insensitive comparison
+    word_lower = word.lower()
+    #"""
+
+    # First check: word list (very fast)
+    if word_lower in word_list_set:
+        return True
+
+    #TODO:
+    #"""
+    # Second check: capitalized version (for proper nouns)
+    # If original word is capitalized, check if lowercase version is in list
+    if word and word[0].isupper() and word_lower in word_list_set:
+        return True
+    #"""
+
+    # Third check: enchant (slower, but handles custom words and other languages)
+    if dict_obj:
+        return dict_obj.check(word)
+
+    # If no dict_obj, assume correct to avoid false positives
+    return True
+
+def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_list_set=None):
+    """
+    find misspelled words in a line, but ignore words with numbers (v1.0) and words with underscore (my_var_name). and if lexer is active only comments/strings are checked.
+    # TODO: ignore camel case vars (myVarName), like in javascript
+
+    Args:
+        word_list_set: Optional word list for fast lookups. If None, uses enchant only.
+
+    Returns list of misspelled word positions.
+    """
     count = 0
-    replaced = 0
-    res_x = []
-    res_y = []
-    res_n = []
-    line = ed.get_text_line(nline)
+    res_x, res_y, res_n = [], [], []
 
-    ranges = []
-    urls = re_url.finditer(line)
-    if urls:
-        for i in urls:
-            ranges.append(i.span())
+    # Early exit for empty lines
+    if not line:
+        return (0, res_x, res_y, res_n)
 
-    def is_url(x):
-        for r in ranges:
-            if r[0] <= x < r[1]:
-                return True, r[1]
-        return False, None
+    # Pre-check for URLs only if line contains ://
+    has_urls = '://' in line
+    url_ranges = None
+    if has_urls:
+        url_ranges = [m.span() for m in re_url.finditer(line)]
+        if not url_ranges:
+            has_urls = False
 
-    n1 = x_start - 1
-    while True:
-        n1 += 1
-        if n1 >= len(line):
-            break
-        if (x_end >= 0) and (n1 >= x_end):
-            break
-        if not is_word_char(line[n1]):
-            continue
-        n2 = n1 + 1
-        while n2 < len(line) and is_word_char(line[n2]):
-            n2 += 1
+    end_pos = x_end if x_end >= 0 else len(line)
+    # iteratively searches the given line of text, starting from x_start up to end_pos, and returns every continuous sequence of letters, numbers, underscores, and apostrophes that is found
+    for m in word_re.finditer(line, x_start, end_pos):
+        sub = m.group()
 
-        #strip quote from begin of word
-        while (n1 < len(line)) and line[n1] == "'":
-            n1 += 1
+        # we repeat the cache check here despite we do it at the end, doing it here reduces a lot of consumed time because we bypass all the following checks
+        if sub in cache:
+            if cache[sub]:
+                continue
 
-        x_pos = n1    #start of actual word
-        n1 = n2       #new start pos for next word
+        x_pos = m.start()
+        if "'" in sub:
+            # Strip all leading apostrophes
+            while sub and sub[0] == "'":
+                x_pos += 1
+                sub = sub[1:]
 
-        #strip quote from end of word
-        while line[n2 - 1] == "'":
-            n2 -= 1
+            # Strip all trailing apostrophes
+            while sub and sub[-1] == "'":
+                sub = sub[:-1]
 
-        sub = line[x_pos:n2]
-
-        url_found, url_end = is_url(x_pos)
-        if url_found:
-            n1 = url_end                  #set start for next word after url
+        if not sub:
             continue
 
+        # so now sub is guaranteed to contain only characters from {letters, numbers, apostrophes (internal), underscores}
+
+        # checking the cache here again is not bad, it reduces functions calls a litle bit and adds no overhead
+        if sub in cache:
+            if cache[sub]:
+                continue
+
+        # Filter 1: Skip words with numbers or invalid chars, this ensure the word contains only letters and internal apostrophes. this filters out "my_var", "v1", etc... while correctly keeping "it's"
+        if not sub.replace("'", "").isalpha():
+            cache[sub] = True # add to cache as a "correct" (ignorable) word. this have effect only if we check the cache in the begining
+            continue
+
+
+        # TODO: enable this?
+        """
+        # Filter 2: Ignore all-caps words (ex: CONSTANTS)
+        if sub.isupper():
+            cache[sub] = True
+            continue
+
+        # Filter 3: Ignore camelCase/MixedCase
+        # This allows "word" (lower) and "Word" (title), but skips "myWord" or "MyWord" (usefull for javascript code).
+        if not sub.islower() and not sub.istitle():
+            cache[sub] = True
+            continue
+        """
+
+        # Filter 4: Skip URL
+        if url_ranges:
+            in_url = False
+            for r_start, r_end in url_ranges:
+                if r_start <= x_pos < r_end:
+                    in_url = True
+                    break
+            if in_url:
+                continue
+
+        # Filter 5: Skip non-comment/string tokens (for files with a lexer)
         if check_tokens:
             kind = ed.get_token(TOKEN_GET_KIND, x_pos, nline)
             if kind not in ('c', 's'):
-                #print('check_line: not OK token kind:', kind, '; line', nline, '; x', x_pos)
                 continue
 
-        if not is_word_alpha(sub):
-            #print('check_line: not is_word_alpha:', sub)
-            continue
-        if dict_obj.check(sub):
-            #print('check_line: check off:', sub)
+        # check spelling of the word and cache it
+        # optimized spell check: Use word list first, then enchant
+        if sub not in cache:
+            cache[sub] = fast_spell_check(sub, word_list_set)
+        # Skip correctly spelled words
+        if cache[sub]:
             continue
 
+        # --- We found a misspelled word ---
         count += 1
-        if with_dialog:
-            ed.set_caret(x_pos, nline, x_pos + len(sub), nline)
+        res_x.append(x_pos)
+        res_y.append(nline)
+        res_n.append(len(sub))
+
+    return (count, res_x, res_y, res_n)
+
+def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, word_list_set=None):
+    """
+    Find and interactively fix misspelled words in a line (dialog mode).
+    Returns (count, replaced) or None if user cancels.
+
+    Args:
+        word_list_set: Optional word list for fast lookups.
+    """
+    count = 0
+    replaced = 0
+    checked_positions = set()  # Track positions we've already processed
+
+    while True:
+        # Get current line content (may have changed due to replacements)
+        line = ed.get_text_line(nline)
+
+        # Use do_check_line to find all misspelled words
+        _, res_x, res_y, res_n = do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_list_set)
+
+        # Find the first misspelled word we haven't checked yet
+        word_found = False
+        for i in range(len(res_x)):
+            x_pos = res_x[i]
+            word_len = res_n[i]
+
+            if x_pos in checked_positions:
+                continue
+
+            # Mark this position as checked
+            checked_positions.add(x_pos)
+            word_found = True
+            count += 1
+
+            # Get the word
+            sub = line[x_pos:x_pos + word_len]
+
+            # Show dialog
+            ed.set_caret(x_pos, nline, x_pos + word_len, nline)
             rep = dlg_spell(sub)
 
             if rep is None:
-                return   #stop all work
+                return None  # User cancelled
+
             if rep == '':
-                continue #to next word
+                break  # Skip this word, continue to next
+            elif rep == 'ADD':
+                cache[sub] = True
+                break  # Skip, but update cache
 
-            #replace
+            # Replace the word
             replaced += 1
-            ed.delete(x_pos, nline, x_pos + len(sub), nline)
+            ed.delete(x_pos, nline, x_pos + word_len, nline)
             ed.insert(x_pos, nline, rep)
-            line = ed.get_text_line(nline)
-            n1 += len(rep) - len(sub)     #adapt new word position regarding to replaced word len
-        else:
-            res_x.append(x_pos)
-            res_y.append(nline)
-            res_n.append(len(sub))
 
-    return (count, replaced, res_x, res_y, res_n)
+            # Clear checked positions if replacement changes line length
+            # This allows us to re-check positions that may have shifted
+            if len(rep) != word_len:
+                # Keep only positions before the replacement point
+                checked_positions = {pos for pos in checked_positions if pos < x_pos}
+
+            break  # Re-scan the line
+
+        # If no new word was found, we're done with this line
+        if not word_found:
+            break
+
+    return (count, replaced)
 
 
 timer_editors = []
@@ -373,17 +558,25 @@ def timer_check(tag='', info=''):
         do_work(ed, False, False)
     timer_editors = []
 
-    
+
 def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     # work only with remembered editor, until work is finished
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
-    
+
     count_all = 0
     count_replace = 0
-    percent = 0
+    percent = -1
     app_proc(PROC_SET_ESCAPE, False)
     check_tokens = need_check_tokens(editor)
+    cache = spell_cache if op_use_global_cache else {}  # Use global or local cache based on option
+
+    # Load word list temporarily - will be garbage collected after function ends
+    word_list_set = None
+    if op_lang.startswith('en'):
+        word_list_set = load_word_list_temp()
+        # if word_list_set:
+            # print(f"Loaded {len(word_list_set)} words temporarily for spell check")
 
     # opening of Markdown file at startup gives not yet parsed file, so check fails
     if check_tokens and allow_timer:
@@ -402,24 +595,34 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
             x1, y1, x2, y2 = x2, y2, x1, y1  # sort if neccessary
         y2 += 1                      # last line has to be included (range)
         total_lines = y2 - y1
+        lines = [editor.get_text_line(i) for i in range(y1, y2)]
     else:
-        total_lines = editor.get_line_count()
+        total_text = editor.get_text_all()
+        lines = total_text.splitlines()
+        total_lines = len(lines)
         x1 = 0
         x2 = -1
         y1 = 0
         y2 = total_lines
 
-    editor.attr(MARKERS_DELETE_BY_TAG, MARKTAG)   # delete all, otherwise inserting additional markers takes a long time
+    if not with_dialog:
+        editor.attr(MARKERS_DELETE_BY_TAG, MARKTAG)   # delete all, otherwise inserting additional markers takes a long time
 
     res_x = []
     res_y = []
     res_n = []
     escape = False
-    for nline in range(y1, y2):
-        percent_new = (nline - y1) * 100 // total_lines
-        if percent_new != percent:
+
+    if not with_dialog and allow_in_sel:
+        start_time = time.time()
+
+    for idx in range(total_lines):
+        line = lines[idx]
+        nline = y1 + idx
+        percent_new = idx * 100 // total_lines
+        if percent_new // 10 != percent // 10:  # update every 10% to reduce msg_status calls
             percent = percent_new
-            msg_status(_('Spell-checking: %2d%%') % percent, True) # True = force msg
+            msg_status(_('Spell-checking: %2d%%') % percent_new, True) # True = force msg
             if app_proc(PROC_GET_ESCAPE, ''):
                 app_proc(PROC_SET_ESCAPE, False)
                 escape = True
@@ -432,30 +635,43 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
         x_start = x1 if nline == y1 else 0
         x_end = x2 if nline == y2 - 1 else -1
 
-        res = do_check_line(editor, nline, x_start, x_end, with_dialog, check_tokens)
-        if res is None:
-            if with_dialog and (count_all > 0):
-                reset_carets(editor, carets)
-            return
-        count_all     += res[0]
-        count_replace += res[1]
-        res_x         += res[2]
-        res_y         += res[3]
-        res_n         += res[4]
+        if not with_dialog:
+            res = do_check_line(editor, nline, line, x_start, x_end, check_tokens, cache, word_list_set)
+            count_all += res[0]
+            res_x += res[1]
+            res_y += res[2]
+            res_n += res[3]
+        else:
+            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache, word_list_set)
+            if res is None:
+                if count_all > 0:
+                    reset_carets(editor, carets)
+                return
+            count_all += res[0]
+            count_replace += res[1]
 
-    # setting all markers at once is a bit faster than line by line
-    editor.attr(
-        MARKERS_ADD_MANY, MARKTAG,
-        res_x, res_y, res_n,
-        COLOR_NONE, COLOR_NONE, op_underline_color,
-        0, 0, 0,
-        0, 0, op_underline_style, 0,
-        show_on_map = True)
-        
+    # Word list will be garbage collected here when function exits
+
+    if not with_dialog:
+        # setting all markers at once is a bit faster than line by line
+        editor.attr(
+            MARKERS_ADD_MANY, MARKTAG,
+            res_x, res_y, res_n,
+            COLOR_NONE, COLOR_NONE, op_underline_color,
+            0, 0, 0,
+            0, 0, op_underline_style, 0,
+            show_on_map = True)
+
     if escape: return
 
     msg_sel = _('selection only') if is_selection else _('all text')
-    msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace))
+
+    time_str = ''
+    if not with_dialog and allow_in_sel:
+        duration = time.time() - start_time
+        time_str = f' (time: {duration:.2f}s)'
+
+    msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace) + time_str)
 
     if with_dialog and (count_all > 0):
         reset_carets(editor, carets)
@@ -488,15 +704,26 @@ def do_work_word(ed, with_dialog):
     x = info['x']
     y = info['y']
 
+    # Load word list temporarily for single word check
+    word_list_set = None
+    if op_lang.startswith('en'):
+        word_list_set = load_word_list_temp()
+
     if with_dialog:
         ed.set_caret(x, y, x + len(sub), y)
         rep = dlg_spell(sub)
         if rep is None: return
+        if rep == 'ADD':
+            ed.attr(MARKERS_DELETE_BY_POS, MARKTAG, x, y, len(sub))
+            if op_use_global_cache:
+                spell_cache[sub] = True
+            return
         if rep == '': return
+        ed.attr(MARKERS_DELETE_BY_POS, MARKTAG, x, y, len(sub))
         ed.delete(x, y, x + len(sub), y)
         ed.insert(x, y, rep)
     else:
-        if dict_obj.check(sub):
+        if fast_spell_check(sub, word_list_set):
             msg_status(_('Word ok: "%s"') % sub)
             marker = MARKERS_DELETE_BY_POS
         else:
@@ -572,6 +799,8 @@ class Command:
         op_lang = res
         ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
+        if op_use_global_cache:
+            spell_cache.clear() # we clear the cache when user change the dictionary
         if Command.active:
             do_work_if_name(ed, False)
 
@@ -581,6 +810,7 @@ class Command:
         ini_write(filename_ini, 'op', 'confirm_esc_key'    , bool_to_str(op_confirm_esc))
         ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
         ini_write(filename_ini, 'op', 'url_regex'          , op_url_regex)
+        ini_write(filename_ini, 'op', 'use_global_cache'   , bool_to_str(op_use_global_cache))
         if os.path.isfile(filename_ini): file_open(filename_ini)
 
     def goto_next(self):
@@ -623,6 +853,64 @@ class Command:
         Command.active = False
         ed.attr(MARKERS_DELETE_BY_TAG, MARKTAG)
         context_menu(ed, True) # reset context menu
+
+    def get_all_misspelled_words(self):
+        if dict_obj is None:
+            msg_status(_('Spell Checker dictionary was not inited'))
+            return
+        check_tokens = need_check_tokens(ed)
+        cache = spell_cache if op_use_global_cache else {}
+
+        # Load word list temporarily
+        word_list_set = None
+        if op_lang.startswith('en'):
+            word_list_set = load_word_list_temp()
+            if word_list_set:
+                print(f"Loaded {len(word_list_set)} words temporarily")
+
+        total_text = ed.get_text_all()
+        lines = total_text.splitlines()
+        total_lines = len(lines)
+        misspelled = set()
+        count_all = 0
+        percent = -1
+        app_proc(PROC_SET_ESCAPE, False)
+        escape = False
+        start_time = time.time()
+        for idx in range(total_lines):
+            percent_new = idx * 100 // total_lines
+            if percent_new // 10 != percent // 10:  # update every 10% to reduce msg_status calls
+                percent = percent_new
+                msg_status(_('Spell-checking: %2d%%') % percent_new, True) # True = force msg
+                if app_proc(PROC_GET_ESCAPE, ''):
+                    app_proc(PROC_SET_ESCAPE, False)
+                    escape = True
+                    if op_confirm_esc:
+                        escape = msg_box(_('Stop the spell-checking?'), MB_OKCANCEL + MB_ICONQUESTION) == ID_OK
+                    if escape:
+                        msg_status(_('Spell-checking stopped'))
+                        break
+            line = lines[idx]
+            nline = idx
+            res = do_check_line(ed, nline, line, 0, -1, check_tokens, cache, word_list_set)
+            count_all += res[0]
+            for i in range(res[0]):
+                x_pos = res[1][i]
+                sub_len = res[3][i]
+                sub = line[x_pos:x_pos + sub_len]
+                misspelled.add(sub)
+        duration = time.time() - start_time
+        if escape:
+            msg_status(_('Spell-checking stopped'))
+            return
+        sorted_misspelled = sorted(misspelled)
+        if sorted_misspelled:
+            msg_status(_('Found {} misspelled words (time: {:.2f}s)').format(count_all, duration))
+            file_open('')
+            ed.set_text_all('\n'.join(sorted_misspelled))
+            ed.set_prop(PROP_TAB_TITLE, "Misspelled words")
+        else:
+            msg_status(_('No misspelled words found (time: {:.2f}s)').format(duration))
 
     '''
     def toggle_hilite(self):

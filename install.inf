@@ -49,6 +49,17 @@ section=commands
 caption=Spell Checker\Go to previous misspelled
 method=goto_prev
 
+[item33]
+section=commands
+caption=Spell Checker\-
+method=_
+
+[item34]
+section=commands
+caption=Spell Checker\Create a list with all the misspelled words
+method=get_all_misspelled_words
+
+
 [item41]
 section=commands
 caption=Spell Checker\Select language...
