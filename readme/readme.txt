@@ -126,8 +126,9 @@ Options are:
     - "*" (star character): Enable for all files.
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
-      
+
 - "url_regex": RegEx which finds URLs to skip them on checking. Avoid complex RegExes, it's slower.
+- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more. Typical size of the cache on 5 Mb document: 40-60 Mb. Cache will not be cleared until you exit the app. Example speedup on 5 Mb document: 1.5 sec -> 1 sec.
 
 
 About
@@ -137,6 +138,6 @@ Authors:
 - Alexey Torgashin (CudaText)
 - Andreas Heim (https://github.com/dinkumoil) added the Enchant Windows DLL support
 - CudaText forum member A:C made the big refactoring
-- Badr Elmers (https://github.com/badrelmers) improved the spell-checking speed a lot
+- Badr Elmers (https://github.com/badrelmers) improved the speed a lot, made big refactoring
 
 License: MIT
