@@ -135,11 +135,10 @@ Options are:
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
 
-- "url_regex": RegEx which finds URLs to skip them on checking. Avoid complex RegExes, it's slower.
+- "url_regex": RegEx (regular expression) which finds URLs to skip them on checking.
+  Avoid complex RegExes here, it's slower.
 
-- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more
-  on non-first running. Typical size of the cache on 5 Mb document: ~40 Mb. Cache will not be cleared until
-  you exit the app. Example speedup on the full checking (non-first run) of 5 Mb document: 1.5 sec -> 1 sec.
+- "use_global_cache" (0/1): This option enables a global word cache to significantly speed up repeated spell-checking runs within the same session by storing the correctness status of every encountered word. This option is most valuable if you are not using the "Secondary Dictionary Words" (stored in files "py/cuda_spell_checker/wordlists/*.txt"), as normal checks are slower: without this option, a check on a 5 MB file might take ~4 seconds, but with this, the cache will reduce this to ~1 second on the second and successive runs. However, if you are using the "Secondary Dictionary Words" (which makes the first check very fast, ~1.5 seconds), the cache provides only a minimal further speed gain (~1 second) while consuming significant RAM (typically 40−60 MB for a 5 MB file). Since the cache persists for the entire session and is only cleared upon application restart or dictionary change, it is generally not recommended to enable this option if you utilize the "Secondary Dictionary Words". Default: disabled (0).
 
 
 About
