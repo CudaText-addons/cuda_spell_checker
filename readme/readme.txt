@@ -25,9 +25,11 @@ Copy files to folder:
   or
   ~/.config/enchant
 
-On Linux/Unix, you need additionally to install package: hunspell, hunspell-<LANGUAGE>.
+On Linux/Unix, you need additionally to install the package:
+  hunspell
+  hunspell-<LANGUAGE>
 For example, for Russian language and Debian OS:
-$ sudo apt-get install hunspell-ru
+  $ sudo apt-get install hunspell-ru
 
 
 Menu items
