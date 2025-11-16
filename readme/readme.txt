@@ -137,7 +137,7 @@ Options are:
 
 - "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more.
   Typical size of the cache on 5 Mb document: 40-60 Mb. Cache will not be cleared until you exit the app.
-  Example speedup on 5 Mb document: 1.5 sec -> 1 sec.
+  Example speedup on the full checking of 5 Mb document: 1.5 sec -> 1 sec.
 
 
 About
