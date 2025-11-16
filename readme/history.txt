@@ -111,5 +111,5 @@
 + support Rus/Ger chars
 + support other dict files
 
-1.0.0 (mar 2016)
-init
+1.0.0 (2016.03)
+initial version
