@@ -884,11 +884,17 @@ class Command:
         app_proc(PROC_SET_ESCAPE, False)
         escape = False
         start_time = time.time()
+
+        msg_status(_('Spell-checking in progress...'))
+        app_proc(PROC_PROGRESSBAR, 0)
+        app_idle(False)
+
         for idx in range(total_lines):
             percent_new = idx * 100 // total_lines
             if percent_new // 10 != percent // 10:  # update every 10% to reduce msg_status calls
                 percent = percent_new
-                msg_status(_('Spell-checking: %2d%%') % percent_new, True) # True = force msg
+                app_proc(PROC_PROGRESSBAR, percent)
+                app_idle(False)
                 if app_proc(PROC_GET_ESCAPE, ''):
                     app_proc(PROC_SET_ESCAPE, False)
                     escape = True
@@ -906,6 +912,8 @@ class Command:
                 sub_len = res[3][i]
                 sub = line[x_pos:x_pos + sub_len]
                 misspelled.add(sub)
+
+        app_proc(PROC_PROGRESSBAR, -1)
         duration = time.time() - start_time
         if escape:
             msg_status(_('Spell-checking stopped'))
