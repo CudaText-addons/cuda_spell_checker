@@ -1,7 +1,8 @@
 2025.11.16 (patch by @badrelmers)
 + add: included English dictionary files (words_alpha.*), it allowed to reduce checking time on big files very much
-+ add: rewritten logic to add the internal cache, which reduced the checking time more
++ add: rewritten the logic to add the global cache, which reduced the checking time more
 + add: new plugin command "Create a list with all the misspelled words", similar to Notepad++
++ add: new option in "cuda_spell_checker.ini", use_global_cache=0, you can change it to 1 to enable the global cache, which speeds up the spell-checking but uses about 40-60Mb of memory
 
 2025.06.07
 - fix: bug with right-click menu on empty space: 'Spelling' submenu was not updated (thanks @riven)
