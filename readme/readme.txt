@@ -33,20 +33,21 @@ $ sudo apt-get install hunspell-ru
 Menu items
 ==========
 
-Use commands in "Plugins" menu:
+Items in the "Plugins" menu:
 
-- "Check text", "Check text, with suggestions": Run spell-checking, and with
-  suggestion-dialog for misspelled words. Dialog will give suggestions from spell-check engine.
-- "Check word", "Check word, with suggestions": Run spell-checking of only one word, under 1st caret.
-- "Go to next/previous misspelled": Put caret to next (previous) misspelled word,
-  if such words are already highlighted.
+- "Check text": Run spell-checking (of all text or only selection).
+- "Check text, with suggestions": Run spell-checking (of all text or only selection), with the
+  suggestion-dialog for misspelled words. Dialog will give suggestions from the spell-checker dictionaries.
+- "Check word", "Check word, with suggestions": Run spell-checking of only one word, under first caret.
+- "Go to next/previous misspelled": Put caret to next (previous) misspelled word, if such words
+  are already found and underlined.
 
-Use commands in "Options / Settings-plugins / Spell Checker" menu:
+Items in the "Options / Settings-plugins / Spell Checker" menu:
 
 - "Select language": Shows menu-dialog to choose one of installed spelling dictionaries.
-- "Configure": Edit settings file (in 'Ini files' format).
+- "Configure": Edit settings file (it has the INI format).
 - "Configure events": Open dialog to configure events of plugin: on_open and on_change_slow.
-  It writes to file "py/cuda_spell_checker/install.inf". So you must re-configure these settings
+  It writes to the file "py/cuda_spell_checker/install.inf". So you must re-configure these settings
   after each plugin update/installation.
 
 
