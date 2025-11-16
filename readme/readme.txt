@@ -137,9 +137,9 @@ Options are:
 
 - "url_regex": RegEx which finds URLs to skip them on checking. Avoid complex RegExes, it's slower.
 
-- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more.
-  Typical size of the cache on 5 Mb document: 40-60 Mb. Cache will not be cleared until you exit the app.
-  Example speedup on the full checking of 5 Mb document: 1.5 sec -> 1 sec.
+- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more
+  on non-first running. Typical size of the cache on 5 Mb document: ~40 Mb. Cache will not be cleared until
+  you exit the app. Example speedup on the full checking (non-first run) of 5 Mb document: 1.5 sec -> 1 sec.
 
 
 About
