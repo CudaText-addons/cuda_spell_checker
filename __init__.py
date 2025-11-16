@@ -669,7 +669,7 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     time_str = ''
     if not with_dialog and allow_in_sel:
         duration = time.time() - start_time
-        time_str = f' (time: {duration:.2f}s)'
+        time_str = ', ' + _('time') + f' {duration:.2f}s'
 
     msg_status(_('Spell check: {}, {}, {} mistake(s), {} replace(s)').format(op_lang, msg_sel, count_all, count_replace) + time_str)
 
