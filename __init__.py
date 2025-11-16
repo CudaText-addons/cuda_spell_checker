@@ -44,26 +44,26 @@ sys.path.append(_mydir)
 
 def load_word_list_temp():
     """
-    Load words_alpha.txt into a set for O(1) lookup.
+    Load word-list (from folder "wordlists") into a set for O(1) lookup.
     This is called only when spell-checking and the set is discarded after use.
     """
 
     # i downloaded the wordlist from https://github.com/dwyl/english-words
     # TODO: merge with http://www.aaabbb.de/WordList/WordList_en.php
 
-    txt_path = os.path.join(_mydir, 'words_alpha.txt')
+    txt_path = os.path.join(_mydir, 'wordlists', 'en_US.txt')
     if not os.path.exists(txt_path):
-        print(f"Warning: {txt_path} not found. Spell-checking will use Enchant only.")
+        print(f"Spell Checker: File '{txt_path}' not found. Checking will use Enchant only.")
         return set()  # Empty set, will fall back to enchant
 
     try:
         # Load all words into a set (case-insensitive by converting to lowercase)
         with open(txt_path, 'r', encoding='utf-8') as f:
             word_list = {line.strip().lower() for line in f if line.strip()}
-        print(f"Loaded {len(word_list)} words from text file")
+        print(f"Spell Checker: Loaded {len(word_list)} words from text file")
         return word_list
     except Exception as e:
-        print(f"Error loading word list: {e}")
+        print(f"Spell Checker: Error loading word list: {e}")
         return set()
 
 # ============================================================================
