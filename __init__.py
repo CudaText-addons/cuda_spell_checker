@@ -616,13 +616,18 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     if not with_dialog and allow_in_sel:
         start_time = time.time()
 
+    msg_status(_('Spell-checking in progress...'), False)
+    app_proc(PROC_PROGRESSBAR, 0)
+    app_idle(False)
+
     for idx in range(total_lines):
         line = lines[idx]
         nline = y1 + idx
         percent_new = idx * 100 // total_lines
-        if percent_new // 10 != percent // 10:  # update every 10% to reduce msg_status calls
+        if percent_new // 10 != percent // 10:  # update every 10% to reduce app_proc calls
             percent = percent_new
-            msg_status(_('Spell-checking: %2d%%') % percent_new, True) # True = force msg
+            app_proc(PROC_PROGRESSBAR, percent)
+            app_idle(False)
             if app_proc(PROC_GET_ESCAPE, ''):
                 app_proc(PROC_SET_ESCAPE, False)
                 escape = True
@@ -646,11 +651,13 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
             if res is None:
                 if count_all > 0:
                     reset_carets(editor, carets)
+                app_proc(PROC_PROGRESSBAR, -1)
                 return
             count_all += res[0]
             count_replace += res[1]
 
     # Word list will be garbage collected here when function exits
+    app_proc(PROC_PROGRESSBAR, -1) # hide progressbar
 
     if not with_dialog:
         # setting all markers at once is a bit faster than line by line
