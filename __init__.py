@@ -905,12 +905,12 @@ class Command:
             return
         sorted_misspelled = sorted(misspelled)
         if sorted_misspelled:
-            msg_status(_('Found {} misspelled words (time: {:.2f}s)').format(count_all, duration))
+            msg_status(_('Found {} misspelled words, time {:.2f}s').format(count_all, duration))
             file_open('')
             ed.set_text_all('\n'.join(sorted_misspelled))
             ed.set_prop(PROP_TAB_TITLE, "Misspelled words")
         else:
-            msg_status(_('No misspelled words found (time: {:.2f}s)').format(duration))
+            msg_status(_('No misspelled words found, time {:.2f}s').format(duration))
 
     '''
     def toggle_hilite(self):
