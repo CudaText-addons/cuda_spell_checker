@@ -113,23 +113,30 @@ to the personal word list. This is text file which you can edit or delete. Locat
 Options
 =======
 
-Plugin has several options in ini-file, call command
+Plugin has several options in the ini-file, call the menu item:
 "Options / Settings-plugins / Spell Checker / Config".
 Options are:
 
-- "lang": Spell-checker language which user chose in the "Select language" dialog, e.g. "en_US".
+- "lang": Spell-checker language, e.g. "en_US". You cannot just change the value here without installing
+  additional Enchant-library dictionaries. After you install them, use the "Select language" plugin's
+  command to choose the language.
+
 - "underline_style" (0..6): Style of lines below misspelled words.
-- "confirm_esc_key" (0/1): Allows to show confirmation when user presses Esc during long spell-checking.
+
+- "confirm_esc_key" (0/1): Allows to show confirmation when user presses Esc-key during long spell-checking.
 
 - "file_extension_list": Which files to check automatically, by events (on_change_slow, on_open).
-    Possible values:
+  Possible values:
     - "" (empty value, without quotes): Disable for all files.
     - "*" (star character, without quotes): Enable for all files.
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
 
 - "url_regex": RegEx which finds URLs to skip them on checking. Avoid complex RegExes, it's slower.
-- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more. Typical size of the cache on 5 Mb document: 40-60 Mb. Cache will not be cleared until you exit the app. Example speedup on 5 Mb document: 1.5 sec -> 1 sec.
+
+- "use_global_cache" (0/1): Allows to create the global cache to speed-up the spell-checking even more.
+  Typical size of the cache on 5 Mb document: 40-60 Mb. Cache will not be cleared until you exit the app.
+  Example speedup on 5 Mb document: 1.5 sec -> 1 sec.
 
 
 About
