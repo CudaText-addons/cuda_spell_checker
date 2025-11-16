@@ -1,4 +1,4 @@
-2025.11.16 (patch by @badrelmers)
+2025.11.16 (patches by @badrelmers)
 + add: included English dictionary files (words_alpha.*), it allowed to reduce checking time on big files very much
 + add: rewritten the logic to add the global cache, which reduced the checking time more
 + add: new plugin command "Create a list with all the misspelled words", similar to Notepad++
@@ -7,9 +7,9 @@
 2025.06.07
 - fix: bug with right-click menu on empty space: 'Spelling' submenu was not updated (thanks @riven)
 
-2023.03.30
-+ add: dialog 'Misspelled word' now uses dlg_proc API - now dialog position is kept during the app session (patch by @veksha)
-- fix: if user clicks another editor during long spell-checking, checking can continue the work in another editor (patch by @veksha)
+2023.03.30 (patches by @veksha)
++ add: dialog 'Misspelled word' now uses dlg_proc API - now dialog position is kept during the app session
+- fix: if user clicks another editor during long spell-checking, checking can continue the work in another editor
 
 2023.02.23
 + add: even with CudaText option "mouse_rt_click_moves_caret":false, plugin correctly updates context menu "Spelling" submenu on right clicks
@@ -20,8 +20,8 @@
 2022.12.11
 - fix: when editor opens N>1 tabs from startup session, only one of them was checked by Spell Checker
 
-2022.11.29
-* change: update Enchant to v2.2.7 in order to be able to store words in user defined dictionaries under Windows (patch from @dinkumoil)
+2022.11.29 (patch by @dinkumoil)
+* change: update Enchant to v2.2.7 in order to be able to store words in user defined dictionaries under Windows
 
 2022.11.27
 * change: instead of install.inf, write event-options (on_open/on_change_slow) to plugins.ini
