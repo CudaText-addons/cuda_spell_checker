@@ -44,37 +44,16 @@ sys.path.append(_mydir)
 
 def load_word_list_temp():
     """
-    Load words_alpha.pkl (or fallback to .txt) into a set for O(1) lookup.
+    Load words_alpha.txt into a set for O(1) lookup.
     This is called only when spell-checking and the set is discarded after use.
     """
 
     # i downloaded the wordlist from https://github.com/dwyl/english-words
     # TODO: merge with http://www.aaabbb.de/WordList/WordList_en.php
 
-    # to use pkl file (which shhould load the words list faster) convert txt to pkl first, but i did not see any speed gain, so i will use the normal txt because it s easier to edit and expand by users if needed
-    # with open('words_alpha.txt', 'r') as f:
-        # words = frozenset(line.strip().lower() for line in f)
-    # import pickle
-    # with open('words_alpha.pkl', 'wb') as f:
-        # pickle.dump(words, f)
-
-
-    pkl_path = os.path.join(_mydir, 'words_alpha.pkl')
     txt_path = os.path.join(_mydir, 'words_alpha.txt')
-
-    try:
-        if os.path.exists(pkl_path):
-            import pickle
-            with open(pkl_path, 'rb') as f:
-                word_list = pickle.load(f)
-            print(f"Loaded {len(word_list)} words from pickle file (fast)")
-            return word_list
-    except Exception as e:
-        print(f"Error loading pickle file: {e}, falling back to text file")
-
-    # Fallback to text file if pickle doesn't exist or failed
     if not os.path.exists(txt_path):
-        print(f"Warning: {txt_path} not found. Spell checking will use enchant only.")
+        print(f"Warning: {txt_path} not found. Spell-checking will use Enchant only.")
         return set()  # Empty set, will fall back to enchant
 
     try:
