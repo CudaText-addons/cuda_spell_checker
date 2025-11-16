@@ -1,6 +1,7 @@
 2025.11.16 (patch by @badrelmers)
 + add: included English dictionary files (words_alpha.*), it allowed to reduce checking time on big files very much
 + add: rewritten logic to add the internal cache, which reduced the checking time more
++ add: new plugin command "Create a list with all the misspelled words", similar to Notepad++
 
 2025.06.07
 - fix: bug with right-click menu on empty space: 'Spelling' submenu was not updated (thanks @riven)
