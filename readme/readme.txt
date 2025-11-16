@@ -134,8 +134,9 @@ About
 =====
 
 Authors:
-  Alexey Torgashin (CudaText)
-  Andreas Heim (https://github.com/dinkumoil) added the Enchant Windows DLL support
-  CudaText forum member A:C made the big refactoring
-  
+- Alexey Torgashin (CudaText)
+- Andreas Heim (https://github.com/dinkumoil) added the Enchant Windows DLL support
+- CudaText forum member A:C made the big refactoring
+- Badr Elmers (https://github.com/badrelmers) improved the spell-checking speed a lot
+
 License: MIT
