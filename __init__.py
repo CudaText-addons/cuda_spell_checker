@@ -908,7 +908,7 @@ class Command:
             msg_status(_('Found {} misspelled words, time {:.2f}s').format(count_all, duration))
             file_open('')
             ed.set_text_all('\n'.join(sorted_misspelled))
-            ed.set_prop(PROP_TAB_TITLE, "Misspelled words")
+            ed.set_prop(PROP_TAB_TITLE, _("Misspelled words"))
         else:
             msg_status(_('No misspelled words found, time {:.2f}s').format(duration))
 
