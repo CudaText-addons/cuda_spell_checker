@@ -1,7 +1,10 @@
 2025.11.16 (patches by @badrelmers)
-+ add: included English additional word-list, it allows to reduce checking time on big files very much
-+ add: new option "use_global_cache" (0 by default), you can change it to 1 to enable the global cache, which speeds up the spell-checking non-first running
-+ add: new plugin command "Create a list with all the misspelled words", like in Notepad++
+* change: Major performance refactor. High-speed checking is now done against an in-memory Extended Dictionary (ext_dict/*.txt) for O(1) lookups, reducing false positives and checking a 6MB file in ~1.5s.
++ add: New menu command "Toggle the Extended Dictionary" to switch between the generic Extended Dictionary (high-speed, many words, language-variant-generic) and the language-variant-specific Hunspell dictionary.
++ add: New option "use_extended_dictionary" (1 by default).
++ add: New option "use_global_cache" (0 by default), enabling a global cache for faster non-first runs (~1s for 6MB file).
++ add: New plugin command "Create a list with all the misspelled words", like in Notepad++.
+* change: Enhanced programmer filters to skip checking words that are ALL-CAPS, camelCase/MixedCase.
 
 2025.06.07
 - fix: bug with right-click menu on empty space: 'Spelling' submenu was not updated (thanks @riven)
