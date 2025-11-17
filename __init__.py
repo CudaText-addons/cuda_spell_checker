@@ -724,7 +724,7 @@ def do_work_word(ed, with_dialog):
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
     if not m: return
-    m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4, som, mo) in m if tag == MARKTAG]
+    m = [(x, y) for (tag, x, y, *_) in m if tag == MARKTAG]
     if not m: return
 
     if is_next:
