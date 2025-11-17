@@ -66,6 +66,12 @@ caption=Spell Checker\Select language...
 method=select_dict
 menu=o
 
+[item92]
+section=commands
+caption=Spell Checker\Toggle the Extended Dictionary
+method=toggle_extended_dictionary
+menu=o
+
 [item95]
 section=commands
 caption=Spell Checker\Configure

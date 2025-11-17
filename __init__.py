@@ -19,12 +19,13 @@ filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini'
 filename_plugins = os.path.join(app_path(APP_DIR_SETTINGS), 'plugins.ini')
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 
-op_lang            =             ini_read(filename_ini, 'op', 'lang'               , 'en_US'          )
-op_underline_style =         int(ini_read(filename_ini, 'op', 'underline_style'    , '6'              ))
-op_confirm_esc     = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key'    , '0'              ))
-op_file_types      =             ini_read(filename_ini, 'op', 'file_extension_list', '*'              )
-op_url_regex       =             ini_read(filename_ini, 'op', 'url_regex'          , r'\bhttps?://\S+')
-op_use_global_cache= str_to_bool(ini_read(filename_ini, 'op', 'use_global_cache'   , '0'              ))
+op_lang                      =             ini_read(filename_ini, 'op', 'lang'                      , 'en_US'          )
+op_underline_style           =         int(ini_read(filename_ini, 'op', 'underline_style'           , '6'              ))
+op_confirm_esc               = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key'           , '0'              ))
+op_file_types                =             ini_read(filename_ini, 'op', 'file_extension_list'       , '*'              )
+op_url_regex                 =             ini_read(filename_ini, 'op', 'url_regex'                 , r'\bhttps?://\S+')
+op_use_global_cache          = str_to_bool(ini_read(filename_ini, 'op', 'use_global_cache'          , '0'              ))
+op_use_extended_dictionary   = str_to_bool(ini_read(filename_ini, 'op', 'use_extended_dictionary'   , '1'              ))
 
 re_url = re.compile(op_url_regex, 0)
 word_re = re.compile(r"[\w']+")
@@ -39,34 +40,170 @@ if sys.platform == "win32":
 sys.path.append(_mydir)
 
 # ============================================================================
-# LOAD ENGLISH WORD LIST INTO A SET FOR FAST LOOKUP
+# HUNSPELL DICTIONARY PARSING
 # ============================================================================
 
-def load_word_list_temp():
+def parse_hunspell_dic(lang_code):
     """
-    Load word-list (from folder "wordlists") into a set for O(1) lookup.
-    This is called only when spell-checking and the set is discarded after use.
+    Parse a Hunspell .dic file and extract all base words.
+    Returns a set of words.
+    
+    Args:
+        lang_code: Language code like 'en_US', 'de_DE', etc.
     """
-
-    # i downloaded the wordlist from https://github.com/dwyl/english-words
-    # TODO: merge with http://www.aaabbb.de/WordList/WordList_en.php
-
-    txt_name = 'en_US.txt' if op_lang.startswith('en') else op_lang+'.txt'
-    txt_path = os.path.join(_mydir, 'wordlists', txt_name)
-    if not os.path.exists(txt_path):
-        print(f"Spell Checker: Cannot find 'wordlists/{txt_name}'. Checking will use Enchant only.")
-        return set()  # Empty set, will fall back to enchant
-
+    dic_file = os.path.join(_mydir, _ench, "data", "share", "enchant", "hunspell", f"{lang_code}.dic")
+    
+    if not os.path.exists(dic_file):
+        msg_status(_("Spell Checker: Could not find Hunspell dictionary for {}").format(lang_code))
+        return set()
+    
+    # Parsing Hunspell dictionary: {dic_file}
+    words = set()
     try:
-        # Load all words into a set (case-insensitive by converting to lowercase)
-        with open(txt_path, 'r', encoding='utf-8') as f:
-            word_list = {line.strip().lower() for line in f if line.strip()}
-        print(f"Spell Checker: Loaded {len(word_list)} words from 'wordlists/{txt_name}'")
-        return word_list
+        with open(dic_file, 'r', encoding='utf-8', errors='ignore') as f:
+            # Skip the first line (word count)
+            next(f, None)
+            
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Split on '/' to get base word (ignore affixes)
+                # Format is usually: word/flags or just word
+                word = line.split('/')[0].strip()
+                
+                # Add word as-is, preserving case and all characters from Hunspell
+                if word:
+                    words.add(word)
+        
+        msg_status(_("Spell Checker: Extracted {} words from Hunspell dictionary").format(len(words)))
+        return words
+    
     except Exception as e:
-        print(f"Spell Checker: Error loading word list: {e}")
+        msg_status(_("Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
+        print(_("Error: Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
         return set()
 
+
+def create_hunspell_wordlist(lang_code):
+    """
+    Create an extended dictionary word list from Hunspell dictionary.
+    Saves it to ext_dict folder with the language code name.
+    
+    Args:
+        lang_code: Language code like 'en_US', 'de_DE', etc.
+    """
+    ext_dict_dir = os.path.join(_mydir, 'ext_dict')
+    os.makedirs(ext_dict_dir, exist_ok=True)
+    
+    output_file = os.path.join(ext_dict_dir, f"{lang_code}.txt")
+    
+    if os.path.exists(output_file):
+        msg_status(_("Spell Checker: Hunspell word list already exists: {}").format(output_file))
+        return True
+    
+    # Parse the Hunspell dictionary
+    words = parse_hunspell_dic(lang_code)
+    
+    if not words:
+        msg_status(_("Spell Checker: Failed to create word list for {}").format(lang_code))
+        return False
+    
+    # Save to file, so next time we load the extended dict directly, 
+    # TODO: maybe it is better to auto create the dict on the fly so if the user update his hunspell dict then he will get an updated extended dict also, automatically, (otherwise the user need to delete the extended dict manually to get a newly autocreated and updated one). lets leave it as is now because we need max speed spell checking and maybe change it in the future
+    try:
+        with open(output_file, 'w', encoding='utf-8', newline='') as f:
+            for word in sorted(words):
+                f.write(word + '\n')
+        
+        msg_status(_("Spell Checker: Created Hunspell word list: {} ({} words)").format(output_file, len(words)))
+        return True
+    
+    except Exception as e:
+        msg_status(_("Spell Checker: Error saving word list: {e}").format(e))
+        return False
+
+
+# ============================================================================
+# LOAD EXTENDED DICTIONARY INTO A SET FOR FAST LOOKUP
+# ============================================================================
+
+cleaned_generic_dicts = set()
+def load_extended_dict_temp():
+    """
+    Load the 'Extended Dictionary' words into a set for O(1) lookup.
+    This is called only when spell-checking and the set is discarded after use.
+    
+    Behavior depends on op_use_extended_dictionary option:
+    - If True: Load generic extended dictionary (e.g., en_generic.txt with 360k words)
+      - If not found, fallback to Hunspell-compatible dictionary (e.g., en_US.txt with 70k words)
+    - If False: Load or create Hunspell-compatible dictionary (e.g., en_US.txt with 70k words)
+    
+    Returns:
+        set: Set of words for fast lookup, or empty set if unavailable
+    """
+    ext_dict_dir = os.path.join(_mydir, 'ext_dict')
+    
+    if op_use_extended_dictionary:
+        # Try generic extended dictionary first
+        lang_prefix = op_lang[:2] if len(op_lang) >= 2 else 'en'
+        generic_txt_name = f'{lang_prefix}_generic.txt'
+        generic_txt_path = os.path.join(ext_dict_dir, generic_txt_name)
+        
+        if os.path.exists(generic_txt_path):
+            try:
+                # {lang_prefix}_generic.txt should not start or end with white space, but if someone forget this then we should use {line.strip() for line in f}, but it is a litle bit slower than set(f.read().splitlines()), and this file will be loaded at every spell check so it should be the fastest posible, so lets clean it once per session to be safe
+                if lang_prefix in cleaned_generic_dicts:
+                    # Fast path: Assume clean, use splitlines
+                    with open(generic_txt_path, 'r', encoding='utf-8') as f:
+                        word_list = set(f.read().splitlines())
+                else:
+                    # Clean path: Load with strip, dedup preserving order, rewrite clean
+                    with open(generic_txt_path, 'r', encoding='utf-8') as f:
+                        words = [line.strip() for line in f if line.strip()]
+                    # Dedup preserving order (using dict.fromkeys in Python 3.7+)
+                    unique_words = list(dict.fromkeys(words))
+                    word_list = set(unique_words)
+                    
+                    # Rewrite the file clean (no extra spaces, no blanks)
+                    with open(generic_txt_path, 'w', encoding='utf-8', newline='') as fw:
+                        for word in unique_words:
+                            fw.write(word + '\n')
+                    
+                    cleaned_generic_dicts.add(lang_prefix)
+                    msg_status(_("Spell Checker: Cleaned and loaded {} words from extended dictionary '{}'").format(len(word_list), generic_txt_name))
+                    return word_list
+                
+                msg_status(_("Spell Checker: Loaded {} words from extended dictionary '{}'").format(len(word_list), generic_txt_name))
+                return word_list
+            except Exception as e:
+                msg_status(_("Spell Checker: Error loading extended dictionary: {e}").format(e))
+        
+        # Fallback to Hunspell-compatible if generic not found or failed to load
+        msg_status(_("Spell Checker: Extended dictionary not found: '{}'. Falling back to Hunspell-compatible.").format(generic_txt_name))
+    
+    # Hunspell-compatible dictionary (used directly if op_use_extended_dictionary=False, or as fallback)
+    hunspell_txt_name = f'{op_lang}.txt'
+    hunspell_txt_path = os.path.join(ext_dict_dir, hunspell_txt_name)
+    
+    # If it doesn't exist, try to create it from Hunspell dictionary
+    if not os.path.exists(hunspell_txt_path):
+        msg_status(_("Spell Checker: Hunspell word list not found. Creating from dictionary..."))
+        if not create_hunspell_wordlist(op_lang):
+            msg_status(_("Spell Checker: Could not create Hunspell word list. Using Enchant only."))
+            return set()
+    
+    # Load the Hunspell word list (assume clean, use fast splitlines)
+    try:
+        with open(hunspell_txt_path, 'r', encoding='utf-8') as f:
+            word_list = set(f.read().splitlines())
+        msg_status(_("Spell Checker: Loaded {} words from Hunspell word list '{}'").format(len(word_list), hunspell_txt_name))
+        return word_list
+    except Exception as e:
+        msg_status(_("Spell Checker: Error loading Hunspell word list: {e}").format(e))
+        return set()
+        
 # ============================================================================
 # ENCHANT INITIALIZATION
 # ============================================================================
@@ -313,54 +450,37 @@ def need_check_tokens(ed):
     else:
         return False
 
-def fast_spell_check(word, word_list_set=None):
+def fast_spell_check(word, extended_dict_set=None):
     """
-    Fast spell check using word list + enchant fallback.
+    Fast spell check using extended dictionary + enchant fallback.
     Returns True if word is correct, False if misspelled.
 
     Args:
-        word: The word to check
-        word_list_set: Optional word list set. If None, only enchant is used.
+        word: The word to check (preserving original case)
+        extended_dict_set: Optional extended dictionary set. If None, only enchant is used.
     """
-
-    #TODO rework this
-    if not op_lang.startswith('en') or word_list_set is None:
+    # If no extended dictionary available, use enchant only
+    if extended_dict_set is None:
         return dict_obj.check(word) if dict_obj else True
 
-
-    #TODO
-    #word_lower = word
-    #"""
-    # Convert to lowercase for case-insensitive comparison
-    word_lower = word.lower()
-    #"""
-
-    # First check: word list (very fast)
-    if word_lower in word_list_set:
+    # First check: exact match in extended dictionary (very fast O(1) lookup)
+    if word in extended_dict_set:
         return True
 
-    #TODO:
-    #"""
-    # Second check: capitalized version (for proper nouns)
-    # If original word is capitalized, check if lowercase version is in list
-    if word and word[0].isupper() and word_lower in word_list_set:
-        return True
-    #"""
-
-    # Third check: enchant (slower, but handles custom words and other languages)
+    # Second check: enchant (slower, but handles custom words added by user)
     if dict_obj:
         return dict_obj.check(word)
 
     # If no dict_obj, assume correct to avoid false positives
     return True
 
-def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_list_set=None):
+def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, extended_dict_set=None):
     """
     find misspelled words in a line, but ignore words with numbers (v1.0) and words with underscore (my_var_name). and if lexer is active only comments/strings are checked.
     # TODO: ignore camel case vars (myVarName), like in javascript
 
     Args:
-        word_list_set: Optional word list for fast lookups. If None, uses enchant only.
+        extended_dict_set: Optional extended dictionary for fast lookups. If None, uses enchant only.
 
     Returns list of misspelled word positions.
     """
@@ -416,8 +536,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_lis
             continue
 
 
-        # TODO: enable this?
-        """
+        # TODO: check speed again with filter 2 and 3 and optimize if needed
         # Filter 2: Ignore all-caps words (ex: CONSTANTS)
         if sub.isupper():
             cache[sub] = True
@@ -428,7 +547,6 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_lis
         if not sub.islower() and not sub.istitle():
             cache[sub] = True
             continue
-        """
 
         # Filter 4: Skip URL
         if url_ranges:
@@ -449,7 +567,8 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_lis
         # check spelling of the word and cache it
         # optimized spell check: Use word list first, then enchant
         if sub not in cache:
-            cache[sub] = fast_spell_check(sub, word_list_set)
+            cache[sub] = fast_spell_check(sub, extended_dict_set)
+        
         # Skip correctly spelled words
         if cache[sub]:
             continue
@@ -462,13 +581,13 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_lis
 
     return (count, res_x, res_y, res_n)
 
-def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, word_list_set=None):
+def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, extended_dict_set=None):
     """
     Find and interactively fix misspelled words in a line (dialog mode).
     Returns (count, replaced) or None if user cancels.
 
     Args:
-        word_list_set: Optional word list for fast lookups.
+        extended_dict_set: Optional extended dictionary for fast lookups.
     """
     count = 0
     replaced = 0
@@ -479,7 +598,7 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, wo
         line = ed.get_text_line(nline)
 
         # Use do_check_line to find all misspelled words
-        _, res_x, res_y, res_n = do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, word_list_set)
+        _, res_x, res_y, res_n = do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, extended_dict_set)
 
         # Find the first misspelled word we haven't checked yet
         word_found = False
@@ -551,8 +670,8 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     check_tokens = need_check_tokens(editor)
     cache = spell_cache if op_use_global_cache else {}  # Use global or local cache based on option
 
-    # Load word list temporarily - will be garbage collected after function ends
-    word_list_set = load_word_list_temp()
+    # Load extended dictionary temporarily - will be garbage collected after function ends
+    extended_dict_set = load_extended_dict_temp()
 
     # opening of Markdown file at startup gives not yet parsed file, so check fails
     if check_tokens and allow_timer:
@@ -617,13 +736,13 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
         x_end = x2 if nline == y2 - 1 else -1
 
         if not with_dialog:
-            res = do_check_line(editor, nline, line, x_start, x_end, check_tokens, cache, word_list_set)
+            res = do_check_line(editor, nline, line, x_start, x_end, check_tokens, cache, extended_dict_set)
             count_all += res[0]
             res_x += res[1]
             res_y += res[2]
             res_n += res[3]
         else:
-            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache, word_list_set)
+            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache, extended_dict_set)
             if res is None:
                 if count_all > 0:
                     reset_carets(editor, carets)
@@ -688,7 +807,7 @@ def do_work_word(ed, with_dialog):
     y = info['y']
 
     # Load word list temporarily for single word check
-    word_list_set = load_word_list_temp()
+    extended_dict_set = load_extended_dict_temp()
 
     if with_dialog:
         ed.set_caret(x, y, x + len(sub), y)
@@ -704,7 +823,7 @@ def do_work_word(ed, with_dialog):
         ed.delete(x, y, x + len(sub), y)
         ed.insert(x, y, rep)
     else:
-        if fast_spell_check(sub, word_list_set):
+        if fast_spell_check(sub, extended_dict_set):
             msg_status(_('Word is Ok: "%s"') % sub)
             marker = MARKERS_DELETE_BY_POS
         else:
@@ -724,7 +843,7 @@ def do_work_word(ed, with_dialog):
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET)
     if not m: return
-    m = [(x, y) for (tag, x, y, *_) in m if tag == MARKTAG]
+    m = [(x, y) for (tag, x, y, nlen, c1, c2, c3, f1, f2, f3, b1, b2, b3, b4, som, mo) in m if tag == MARKTAG]
     if not m: return
 
     if is_next:
@@ -741,7 +860,7 @@ def do_goto(is_next):
         ed.set_caret(m[0], m[1])
         msg_status(_('Go to misspelled: {}:{}').format(m[1] + 1, m[0] + 1))
     else:
-        msg_status(_('Cannot go to next/previous misspelled'))
+        msg_status(_('Cannot go to next/prev'))
 
 class Command:
     active = False
@@ -786,12 +905,13 @@ class Command:
             do_work_if_name(ed, False)
 
     def config(self):
-        ini_write(filename_ini, 'op', 'lang'               , op_lang)
-        ini_write(filename_ini, 'op', 'underline_style'    , str(op_underline_style))
-        ini_write(filename_ini, 'op', 'confirm_esc_key'    , bool_to_str(op_confirm_esc))
-        ini_write(filename_ini, 'op', 'file_extension_list', op_file_types)
-        ini_write(filename_ini, 'op', 'url_regex'          , op_url_regex)
-        ini_write(filename_ini, 'op', 'use_global_cache'   , bool_to_str(op_use_global_cache))
+        ini_write(filename_ini, 'op', 'lang'                    , op_lang)
+        ini_write(filename_ini, 'op', 'underline_style'         , str(op_underline_style))
+        ini_write(filename_ini, 'op', 'confirm_esc_key'         , bool_to_str(op_confirm_esc))
+        ini_write(filename_ini, 'op', 'file_extension_list'     , op_file_types)
+        ini_write(filename_ini, 'op', 'url_regex'               , op_url_regex)
+        ini_write(filename_ini, 'op', 'use_global_cache'        , bool_to_str(op_use_global_cache))
+        ini_write(filename_ini, 'op', 'use_extended_dictionary' , bool_to_str(op_use_extended_dictionary))
         if os.path.isfile(filename_ini): file_open(filename_ini)
 
     def goto_next(self):
@@ -843,7 +963,7 @@ class Command:
         cache = spell_cache if op_use_global_cache else {}
 
         # Load word list temporarily
-        word_list_set = load_word_list_temp()
+        extended_dict_set = load_extended_dict_temp()
 
         total_text = ed.get_text_all()
         lines = total_text.splitlines()
@@ -875,7 +995,7 @@ class Command:
                         break
             line = lines[idx]
             nline = idx
-            res = do_check_line(ed, nline, line, 0, -1, check_tokens, cache, word_list_set)
+            res = do_check_line(ed, nline, line, 0, -1, check_tokens, cache, extended_dict_set)
             count_all += res[0]
             for i in range(res[0]):
                 x_pos = res[1][i]
@@ -897,6 +1017,25 @@ class Command:
         else:
             msg_status(_('No misspelled words found, time {:.2f}s').format(duration))
 
+    def toggle_extended_dictionary(self):
+        """Toggle between extended and Hunspell-compatible dictionaries"""
+        global op_use_extended_dictionary
+        
+        op_use_extended_dictionary = not op_use_extended_dictionary
+        ini_write(filename_ini, 'op', 'use_extended_dictionary', bool_to_str(op_use_extended_dictionary))
+        
+        if op_use_extended_dictionary:
+            msg_status(_('Switched to extended dictionary (more words, generic language)'))
+        else:
+            msg_status(_('Switched to Hunspell dictionary (language variant specific)'))
+        
+        # Clear cache and re-check if active
+        if op_use_global_cache:
+            spell_cache.clear()
+        
+        if Command.active:
+            do_work_if_name(ed, False)
+            
     '''
     def toggle_hilite(self):
         self.active = not self.active
