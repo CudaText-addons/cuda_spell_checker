@@ -741,7 +741,7 @@ def do_goto(is_next):
         ed.set_caret(m[0], m[1])
         msg_status(_('Go to misspelled: {}:{}').format(m[1] + 1, m[0] + 1))
     else:
-        msg_status(_('Cannot go to next/prev'))
+        msg_status(_('Cannot go to next/previous misspelled'))
 
 class Command:
     active = False
