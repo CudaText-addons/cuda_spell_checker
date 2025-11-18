@@ -51,11 +51,19 @@ def parse_hunspell_dic(lang_code):
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
-    if os.name == 'nt':
-        dic_file = os.path.join(_mydir, _ench, "data", "share", "enchant", "hunspell", f"{lang_code}.dic")
+    suffix = app_proc(PROC_GET_OS_SUFFIX, '')
+    if suffix=='':
+        dic_dir = os.path.join(_mydir, _ench, "data", "share", "enchant", "hunspell")
+    elif suffix=='__linux':
+        dic_dir = '/usr/share/hunspell'
+    elif suffix=='__mac':
+        dic_dir = '/Library/Spelling/'
     else:
-        dic_file = '/usr/share/hunspell/' + f"{lang_code}.dic" # path on Ubuntu Linux
-    
+        print('ERROR: Spell Checker cannot find Hunspell dicts, OS: '+suffix)
+        return set()
+
+    dic_file = dic_dir + os.sep + lang_code + '.dic'
+
     if not os.path.exists(dic_file):
         msg_status(_("Spell Checker: Could not find Hunspell dictionary for {}").format(lang_code))
         return set()
