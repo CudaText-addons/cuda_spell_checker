@@ -51,7 +51,10 @@ def parse_hunspell_dic(lang_code):
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
-    dic_file = os.path.join(_mydir, _ench, "data", "share", "enchant", "hunspell", f"{lang_code}.dic")
+    if os.name == 'nt':
+        dic_file = os.path.join(_mydir, _ench, "data", "share", "enchant", "hunspell", f"{lang_code}.dic")
+    else:
+        dic_file = '/usr/share/hunspell/' + f"{lang_code}.dic" # path on Ubuntu Linux
     
     if not os.path.exists(dic_file):
         msg_status(_("Spell Checker: Could not find Hunspell dictionary for {}").format(lang_code))
