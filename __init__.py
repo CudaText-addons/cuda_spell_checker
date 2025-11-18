@@ -47,7 +47,7 @@ def parse_hunspell_dic(lang_code):
     """
     Parse a Hunspell .dic file and extract all base words.
     Returns a set of words.
-    
+
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
@@ -67,30 +67,30 @@ def parse_hunspell_dic(lang_code):
     if not os.path.exists(dic_file):
         msg_status(_("Spell Checker: Could not find Hunspell dictionary for {}").format(lang_code))
         return set()
-    
+
     # Parsing Hunspell dictionary: {dic_file}
     words = set()
     try:
         with open(dic_file, 'r', encoding='utf-8', errors='ignore') as f:
             # Skip the first line (word count)
             next(f, None)
-            
+
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 # Split on '/' to get base word (ignore affixes)
                 # Format is usually: word/flags or just word
                 word = line.split('/')[0].strip()
-                
+
                 # Add word as-is, preserving case and all characters from Hunspell
                 if word:
                     words.add(word)
-        
+
         msg_status(_("Spell Checker: Extracted {} words from Hunspell dictionary").format(len(words)))
         return words
-    
+
     except Exception as e:
         msg_status(_("Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
         print(_("Error: Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
@@ -101,36 +101,36 @@ def create_hunspell_wordlist(lang_code):
     """
     Create an extended dictionary word list from Hunspell dictionary.
     Saves it to ext_dict folder with the language code name.
-    
+
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
     ext_dict_dir = os.path.join(_mydir, 'ext_dict')
     os.makedirs(ext_dict_dir, exist_ok=True)
-    
+
     output_file = os.path.join(ext_dict_dir, f"{lang_code}.txt")
-    
+
     if os.path.exists(output_file):
         msg_status(_("Spell Checker: Hunspell word list already exists: {}").format(output_file))
         return True
-    
+
     # Parse the Hunspell dictionary
     words = parse_hunspell_dic(lang_code)
-    
+
     if not words:
         msg_status(_("Spell Checker: Failed to create word list for {}").format(lang_code))
         return False
-    
-    # Save to file, so next time we load the extended dict directly, 
+
+    # Save to file, so next time we load the extended dict directly,
     # TODO: maybe it is better to auto create the dict on the fly so if the user update his hunspell dict then he will get an updated extended dict also, automatically, (otherwise the user need to delete the extended dict manually to get a newly autocreated and updated one). lets leave it as is now because we need max speed spell checking and maybe change it in the future
     try:
         with open(output_file, 'w', encoding='utf-8', newline='') as f:
             for word in sorted(words):
                 f.write(word + '\n')
-        
+
         msg_status(_("Spell Checker: Created Hunspell word list: {} ({} words)").format(output_file, len(words)))
         return True
-    
+
     except Exception as e:
         msg_status(_("Spell Checker: Error saving word list: {}").format(e))
         return False
@@ -145,23 +145,23 @@ def load_extended_dict_temp():
     """
     Load the 'Extended Dictionary' words into a set for O(1) lookup.
     This is called only when spell-checking and the set is discarded after use.
-    
+
     Behavior depends on op_use_extended_dictionary option:
     - If True: Load generic extended dictionary (e.g., en_generic.txt with 360k words)
       - If not found, fallback to Hunspell-compatible dictionary (e.g., en_US.txt with 70k words)
     - If False: Load or create Hunspell-compatible dictionary (e.g., en_US.txt with 70k words)
-    
+
     Returns:
         set: Set of words for fast lookup, or empty set if unavailable
     """
     ext_dict_dir = os.path.join(_mydir, 'ext_dict')
-    
+
     if op_use_extended_dictionary:
         # Try generic extended dictionary first
         lang_prefix = op_lang[:2] if len(op_lang) >= 2 else 'en'
         generic_txt_name = f'{lang_prefix}_generic.txt'
         generic_txt_path = os.path.join(ext_dict_dir, generic_txt_name)
-        
+
         if os.path.exists(generic_txt_path):
             try:
                 # {lang_prefix}_generic.txt should not start or end with white space, but if someone forget this then we should use {line.strip() for line in f}, but it is a litle bit slower than set(f.read().splitlines()), and this file will be loaded at every spell check so it should be the fastest posible, so lets clean it once per session to be safe
@@ -176,35 +176,35 @@ def load_extended_dict_temp():
                     # Dedup preserving order (using dict.fromkeys in Python 3.7+)
                     unique_words = list(dict.fromkeys(words))
                     word_list = set(unique_words)
-                    
+
                     # Rewrite the file clean (no extra spaces, no blanks)
                     with open(generic_txt_path, 'w', encoding='utf-8', newline='') as fw:
                         for word in unique_words:
                             fw.write(word + '\n')
-                    
+
                     cleaned_generic_dicts.add(lang_prefix)
                     msg_status(_("Spell Checker: Cleaned and loaded {} words from extended dictionary '{}'").format(len(word_list), generic_txt_name))
                     return word_list
-                
+
                 msg_status(_("Spell Checker: Loaded {} words from extended dictionary '{}'").format(len(word_list), generic_txt_name))
                 return word_list
             except Exception as e:
                 msg_status(_("Spell Checker: Error loading extended dictionary: {e}").format(e))
-        
+
         # Fallback to Hunspell-compatible if generic not found or failed to load
         msg_status(_("Spell Checker: Extended dictionary not found: '{}'. Falling back to Hunspell-compatible.").format(generic_txt_name))
-    
+
     # Hunspell-compatible dictionary (used directly if op_use_extended_dictionary=False, or as fallback)
     hunspell_txt_name = f'{op_lang}.txt'
     hunspell_txt_path = os.path.join(ext_dict_dir, hunspell_txt_name)
-    
+
     # If it doesn't exist, try to create it from Hunspell dictionary
     if not os.path.exists(hunspell_txt_path):
         msg_status(_("Spell Checker: Hunspell word list not found. Creating from dictionary..."))
         if not create_hunspell_wordlist(op_lang):
             msg_status(_("Spell Checker: Could not create Hunspell word list. Using Enchant only."))
             return set()
-    
+
     # Load the Hunspell word list (assume clean, use fast splitlines)
     try:
         with open(hunspell_txt_path, 'r', encoding='utf-8') as f:
@@ -214,7 +214,7 @@ def load_extended_dict_temp():
     except Exception as e:
         msg_status(_("Spell Checker: Error loading Hunspell word list: {}").format(e))
         return set()
-        
+
 # ============================================================================
 # ENCHANT INITIALIZATION
 # ============================================================================
@@ -579,7 +579,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, extended
         # optimized spell check: Use word list first, then enchant
         if sub not in cache:
             cache[sub] = fast_spell_check(sub, extended_dict_set)
-        
+
         # Skip correctly spelled words
         if cache[sub]:
             continue
@@ -1031,22 +1031,22 @@ class Command:
     def toggle_extended_dictionary(self):
         """Toggle between extended and Hunspell-compatible dictionaries"""
         global op_use_extended_dictionary
-        
+
         op_use_extended_dictionary = not op_use_extended_dictionary
         ini_write(filename_ini, 'op', 'use_extended_dictionary', bool_to_str(op_use_extended_dictionary))
-        
+
         if op_use_extended_dictionary:
             msg_status(_('Switched to extended dictionary (more words, generic language)'))
         else:
             msg_status(_('Switched to Hunspell dictionary (language variant specific)'))
-        
+
         # Clear cache and re-check if active
         if op_use_global_cache:
             spell_cache.clear()
-        
+
         if Command.active:
             do_work_if_name(ed, False)
-            
+
     '''
     def toggle_hilite(self):
         self.active = not self.active
