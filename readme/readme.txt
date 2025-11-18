@@ -45,11 +45,8 @@ https://github.com/CudaText-addons/cuda_spell_checker_extended_dictionaries
 
 The downloaded dictionary files (e.g., `en_generic.txt` or specialized language lists) must be copied into the plugin's `ext_dict` folder:
 
-- on Windows:
-  `CudaText\py\cuda_spell_checker\ext_dict\`
-
-- on Linux/Unix:
-  `~/.config/cudatext/py/cuda_spell_checker/ext_dict/`
+`py/cuda_spell_checker/ext_dict/`
+(Location of the "py" folder is documented in the main Wiki page, e.g. "~/.config/cudatext/py" on Linux.)
 
 Naming Convention:
 The plugin automatically attempts to match the Hunspell dictionary you are using with the corresponding Extended Dictionary file. It extracts the first two letters of your active Hunspell dictionary name (e.g., `en` from `en_US` or `de` from `de_DE`) and searches for a file named `[two-letter-code]_generic.txt` in the `ext_dict` folder (e.g., `en_generic.txt`).
