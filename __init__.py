@@ -121,7 +121,7 @@ def create_hunspell_wordlist(lang_code):
         return True
     
     except Exception as e:
-        msg_status(_("Spell Checker: Error saving word list: {e}").format(e))
+        msg_status(_("Spell Checker: Error saving word list: {}").format(e))
         return False
 
 
@@ -201,7 +201,7 @@ def load_extended_dict_temp():
         msg_status(_("Spell Checker: Loaded {} words from Hunspell word list '{}'").format(len(word_list), hunspell_txt_name))
         return word_list
     except Exception as e:
-        msg_status(_("Spell Checker: Error loading Hunspell word list: {e}").format(e))
+        msg_status(_("Spell Checker: Error loading Hunspell word list: {}").format(e))
         return set()
         
 # ============================================================================
