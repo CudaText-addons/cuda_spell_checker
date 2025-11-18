@@ -6,6 +6,7 @@ import sys
 import re
 import string
 import time
+import shutil
 from .enchant_architecture import EnchantArchitecture
 from cudatext import *
 
@@ -32,6 +33,7 @@ word_re = re.compile(r"[\w']+")
 
 _mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
+EXT_DICT = os.path.join(app_path(APP_DIR_DATA), 'extdict')
 
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
 if sys.platform == "win32":
@@ -100,15 +102,12 @@ def parse_hunspell_dic(lang_code):
 def create_hunspell_wordlist(lang_code):
     """
     Create an extended dictionary word list from Hunspell dictionary.
-    Saves it to ext_dict folder with the language code name.
+    Saves it to 'data/extdict' folder with the language code name.
 
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
-    ext_dict_dir = os.path.join(_mydir, 'ext_dict')
-    os.makedirs(ext_dict_dir, exist_ok=True)
-
-    output_file = os.path.join(ext_dict_dir, f"{lang_code}.txt")
+    output_file = os.path.join(EXT_DICT, f'{lang_code}.txt')
 
     if os.path.exists(output_file):
         msg_status(_("Spell Checker: Hunspell word list already exists: {}").format(output_file))
@@ -154,13 +153,12 @@ def load_extended_dict_temp():
     Returns:
         set: Set of words for fast lookup, or empty set if unavailable
     """
-    ext_dict_dir = os.path.join(_mydir, 'ext_dict')
 
     if op_use_extended_dictionary:
         # Try generic extended dictionary first
         lang_prefix = op_lang[:2] if len(op_lang) >= 2 else 'en'
         generic_txt_name = f'{lang_prefix}_generic.txt'
-        generic_txt_path = os.path.join(ext_dict_dir, generic_txt_name)
+        generic_txt_path = os.path.join(EXT_DICT, generic_txt_name)
 
         if os.path.exists(generic_txt_path):
             try:
@@ -196,7 +194,7 @@ def load_extended_dict_temp():
 
     # Hunspell-compatible dictionary (used directly if op_use_extended_dictionary=False, or as fallback)
     hunspell_txt_name = f'{op_lang}.txt'
-    hunspell_txt_path = os.path.join(ext_dict_dir, hunspell_txt_name)
+    hunspell_txt_path = os.path.join(EXT_DICT, hunspell_txt_name)
 
     # If it doesn't exist, try to create it from Hunspell dictionary
     if not os.path.exists(hunspell_txt_path):
@@ -875,6 +873,15 @@ def do_goto(is_next):
 
 class Command:
     active = False
+
+    def __init__(self):
+        if not os.path.isdir(EXT_DICT):
+            os.mkdir(EXT_DICT)
+        fn = 'en_generic.txt'
+        ini = os.path.join(EXT_DICT, fn)
+        ini0 = os.path.join(_mydir, fn)
+        if not os.path.isfile(ini) and os.path.isfile(ini0):
+            shutil.copyfile(ini0, ini) 
 
     def check(self):
         Command.active = True
