@@ -43,13 +43,10 @@ Installation:
 The plugin's Extended Dictionaries must be downloaded separately from:
 https://github.com/CudaText-addons/cuda_spell_checker_extended_dictionaries
 
-The downloaded dictionary files (e.g., `en_generic.txt` or specialized language lists) must be copied into the plugin's `ext_dict` folder:
-
-`py/cuda_spell_checker/ext_dict/`
-(Location of the "py" folder is documented in the main Wiki page, e.g. "~/.config/cudatext/py" on Linux.)
+The downloaded dictionary files (e.g., `en_generic.txt` or specialized language lists) must be copied into the `data/extdict` folder. Plugin auto-creates this folder under `data`, but you may also create this folder if it not exists yet. (Location of the `data` folder is documented in the main Wiki page, e.g. `~/.config/cudatext/data` on Linux.)
 
 Naming Convention:
-The plugin automatically attempts to match the Hunspell dictionary you are using with the corresponding Extended Dictionary file. It extracts the first two letters of your active Hunspell dictionary name (e.g., `en` from `en_US` or `de` from `de_DE`) and searches for a file named `[two-letter-code]_generic.txt` in the `ext_dict` folder (e.g., `en_generic.txt`).
+The plugin automatically attempts to match the Hunspell dictionary you are using with the corresponding Extended Dictionary file. It extracts the first two letters of your active Hunspell dictionary name (e.g., `en` from `en_US` or `de` from `de_DE`) and searches for a file named `[two-letter-code]_generic.txt` in the `data/extdict` folder (e.g., `en_generic.txt`).
 Therefore, it is strongly recommended that you use the international two-letter naming convention (e.g., `en`, `es`, `fr`) when renaming your Hunspell dictionary files, as this aligns with the file names provided in the Extended Dictionaries GitHub repository. If you use a custom name for your Hunspell file (e.g., `myenglish.dic`), you must manually rename the corresponding Extended Dictionary file (e.g., `en_generic.txt` to `my_generic.txt`) for the feature to work.
 
 
@@ -123,7 +120,7 @@ Note: file install.inf is overwritten on each plugin update/installation,
 so backup this file.
 
 3)
-High-Speed, High-Accuracy Checking: The plugin uses a modern, high-speed checking mechanism. It first checks words against a large, in-memory "Extended Dictionary" (`ext_dict/*.txt`) for an instant O(1) lookup. This is extremely fast (e.g., checking a 6MB file in ~1.5 seconds) and significantly reduces "false positives," as these wordlists are often much larger than the default Hunspell dictionaries. The plugin only falls back to the slower, external Enchant/Hunspell library for words not found in the fast list.
+High-Speed, High-Accuracy Checking: The plugin uses a modern, high-speed checking mechanism. It first checks words against a large, in-memory "Extended Dictionary" (`data/extdict/*.txt`) for an instant O(1) lookup. This is extremely fast (e.g., checking a 6MB file in ~1.5 seconds) and significantly reduces "false positives," as these wordlists are often much larger than the default Hunspell dictionaries. The plugin only falls back to the slower, external Enchant/Hunspell library for words not found in the fast list.
 
 4)
 Programmer-Specific Filters: To reduce false positives in source code, the plugin automatically skips checking words that are:
@@ -170,7 +167,7 @@ Options are:
     - Disabled (0): Uses a smaller, Hunspell-compatible wordlist (e.g., 70k+ words) generated from your specific language (e.g., `en_US` or `en_GB`). This strictly respects your chosen language variant but will result in more false positives for words not in that specific dictionary.
 
 - "use_global_cache" (0/1): This option enables a global word cache to significantly speed up repeated spell-checking runs within the same session by storing the correctness status of every encountered word.
-This option is most valuable if you are not using the "Extended Dictionaries" (stored in files "py/cuda_spell_checker/ext_dict/*.txt"), as normal checks are slower: without this option, a check on a 5 MB file might take ~4 seconds, but with this, the cache will reduce this to ~1 second on the second and successive runs.
+This option is most valuable if you are not using the "Extended Dictionaries" (stored in files "data/extdict/*.txt"), as normal checks are slower: without this option, a check on a 5 MB file might take ~4 seconds, but with this, the cache will reduce this to ~1 second on the second and successive runs.
 However, if you are using the "Extended Dictionary" (which makes the first check very fast, ~1.5 seconds), the cache provides only a minimal further speed gain (~1 second) while consuming significant RAM (typically 40−60 MB for a 5 MB file).
 Since the cache persists for the entire session and is only cleared upon application restart or dictionary change, it is generally not recommended to enable this option if you utilize the "Extended Dictionary".
 Default: disabled (0).
