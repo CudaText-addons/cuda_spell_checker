@@ -93,7 +93,7 @@ def parse_hunspell_dic(lang_code):
 
     except Exception as e:
         msg_status(_("Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
-        print(_("Error: Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
+        print(_("ERROR: Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
         return set()
 
 
