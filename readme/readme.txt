@@ -31,7 +31,8 @@ On Linux/Unix, you need additionally to install the package:
 For example, for Russian language and Debian OS:
   $ sudo apt-get install hunspell-ru
 
-Extended Dictionaries
+
+Extended dictionaries
 =====================
 
 Purpose: Hunspell dictionaries, while accurate because they respect language variants (like American English vs. British English), are often small (e.g., ~70k words for English). This leads to a high number of false positives (correct words marked as misspelled) for general use. The Extended Dictionaries provide much larger wordlists (e.g., ~370k+ words for English) and are generic—they do not respect language variants. This trade-off drastically reduces false positives for most users.
@@ -60,13 +61,11 @@ Menu items
 
 Items in the "Plugins" menu:
 
-- "Check text": Run spell-checking (of all text or only selection).
-- "Check text, with suggestions": Run spell-checking (of all text or only selection), with the
-  suggestion-dialog for misspelled words. Dialog will give suggestions from the spell-checker dictionaries.
-- "Check word", "Check word, with suggestions": Run spell-checking of only one word, under first caret.
-- "Get all misspelled words": Scans the entire document and opens a new tab containing a unique, sorted list of all misspelled words.
-- "Go to next/previous misspelled": Put caret to next (previous) misspelled word, if such words
-  are already found and underlined.
+- "Check text": Run spell-checking (of only selection, if selection is made).
+- "Check text, with suggestions": Run spell-checking (of only selection, if selection is made), with the suggestion dialog for misspelled words. Dialog will give suggestions from the spell-checker dictionaries.
+- "Check word", "Check word, with suggestions": Run spell-checking of only one word, under first caret. You don't need to select a word, only place caret on it.
+- "Go to next/previous misspelled": Put caret to next/previous misspelled word, if such words are already found and underlined.
+- "Create a list with all the misspelled words": Scans the entire document and opens a new tab containing a unique, sorted list of all misspelled words.
 
 Items in the "Options / Settings-plugins / Spell Checker" menu:
 
