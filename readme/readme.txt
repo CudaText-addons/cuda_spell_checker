@@ -135,6 +135,7 @@ Programmer-Specific Filters: To reduce false positives in source code, the plugi
 - Contain numbers (e.g., `v1.0`)
 - Contain underscores (e.g., `my_var_name`)
 
+
 Personal word list
 ==================
 
@@ -152,9 +153,7 @@ Plugin has several options in the ini-file, call the menu item:
 "Options / Settings-plugins / Spell Checker / Config".
 Options are:
 
-- "lang": Spell-checker language, e.g. "en_US". You cannot just change the value here without installing
-  additional Enchant-library dictionaries. After you install them, use the "Select language" plugin's
-  command to choose the language.
+- "lang": Spell-checker language, e.g. "en_US". You cannot just change the value here without installing additional Enchant-library dictionaries. After you install them, use the "Select language" plugin's command to choose the language.
 
 - "underline_style" (0..6): Style of lines below misspelled words.
 
@@ -167,8 +166,7 @@ Options are:
     - "txt,md,html": Enable only for listed file extensions, which are comma-separated, without dot-char.
       To specify files without extension here, add item "-" (minus sign).
 
-- "url_regex": RegEx (regular expression) which finds URLs to skip them on checking.
-  Avoid complex RegExes here, it's slower.
+- "url_regex": RegEx (regular expression) which finds URLs to skip them on checking. Avoid complex RegEx here, it's slower.
 
 - "use_extended_dictionary" (0/1): This option controls which dictionary is used for the high-speed "Extended Dictionary" check.
     - Enabled (1): (Default) Uses a large, generic wordlist (e.g., 370k+ words). This significantly reduces "false positives" but does not respect language variants (e.g., it mixes American and British English). This is ideal for non-native speakers or anyone who prioritizes recognizing the most words.
