@@ -25,7 +25,6 @@ op_underline_style           =         int(ini_read(filename_ini, 'op', 'underli
 op_confirm_esc               = str_to_bool(ini_read(filename_ini, 'op', 'confirm_esc_key'           , '0'              ))
 op_file_types                =             ini_read(filename_ini, 'op', 'file_extension_list'       , '*'              )
 op_url_regex                 =             ini_read(filename_ini, 'op', 'url_regex'                 , r'\bhttps?://\S+')
-op_use_global_cache          = str_to_bool(ini_read(filename_ini, 'op', 'use_global_cache'          , '0'              ))
 
 re_url = re.compile(op_url_regex, 0)
 word_re = re.compile(r"[\w']+")
@@ -35,6 +34,10 @@ _ench = EnchantArchitecture()
 
 # Get temp directory for cached dictionary
 TEMP_DICT_DIR = os.path.join(tempfile.gettempdir(), 'cuda_spell_checker')
+
+# Global temporal cache (30 minutes lifetime)
+CACHE_LIFETIME_MS = 30 * 60 * 1000
+spell_cache = {}
 
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
 if sys.platform == "win32":
@@ -185,9 +188,18 @@ except Exception as ex:
     msg_box(str(ex), MB_OK+MB_ICONERROR)
     dict_obj = None
 
-spell_cache = {}
-
 MARKTAG = 105 #unique int for all marker plugins
+
+def clear_spell_cache(tag='', info=''):
+    """Clear the global spell cache after 30 minutes"""
+    global spell_cache
+    spell_cache.clear()
+    msg_status(_('Spell Checker: Cache cleared after 30 minutes'))
+
+def start_cache_timer():
+    """Start or restart the global spell cache clear timer. every spell check will reset the timer, so the cache will durate for 30min after the last spell check"""
+    timer_proc(TIMER_STOP, "module=cuda_spell_checker;func=clear_spell_cache;", interval=0)    
+    timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=clear_spell_cache;", interval=CACHE_LIFETIME_MS)
 
 def is_word_char(c):
     return c.isalnum() or (c in "'_") # allow _ for later ignore words with _
@@ -638,7 +650,10 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     percent = -1
     app_proc(PROC_SET_ESCAPE, False)
     check_tokens = need_check_tokens(editor)
-    cache = spell_cache if op_use_global_cache else {}  # Use global or local cache based on option
+    
+    # Always use global cache and start/restart the 30-minute global cache clear timer
+    cache = spell_cache
+    start_cache_timer()
 
     # Load cached dictionary temporarily - will be garbage collected after function ends
     cached_dict_set = load_temporal_cached_dictionary()
@@ -778,6 +793,9 @@ def do_work_word(ed, with_dialog):
 
     # Load word list temporarily for single word check
     cached_dict_set = load_temporal_cached_dictionary()
+    
+    # Start cache timer for global cache
+    start_cache_timer()
 
     if with_dialog:
         ed.set_caret(x, y, x + len(sub), y)
@@ -785,8 +803,7 @@ def do_work_word(ed, with_dialog):
         if rep is None: return
         if rep == 'ADD':
             ed.attr(MARKERS_DELETE_BY_POS, MARKTAG, x, y, len(sub))
-            if op_use_global_cache:
-                spell_cache[sub] = True
+            spell_cache[sub] = True
             return
         if rep == '': return
         ed.attr(MARKERS_DELETE_BY_POS, MARKTAG, x, y, len(sub))
@@ -875,8 +892,9 @@ class Command:
         op_lang = res
         ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
-        if op_use_global_cache:
-            spell_cache.clear() # we clear the cache when user change the dictionary
+        
+        # Clear cache when user changes dictionary
+        spell_cache.clear()
         
         # Regenerate cached dictionary for new language
         try:
@@ -893,7 +911,6 @@ class Command:
         ini_write(filename_ini, 'op', 'confirm_esc_key'         , bool_to_str(op_confirm_esc))
         ini_write(filename_ini, 'op', 'file_extension_list'     , op_file_types)
         ini_write(filename_ini, 'op', 'url_regex'               , op_url_regex)
-        ini_write(filename_ini, 'op', 'use_global_cache'        , bool_to_str(op_use_global_cache))
         if os.path.isfile(filename_ini): file_open(filename_ini)
 
     def goto_next(self):
@@ -942,7 +959,10 @@ class Command:
             msg_status(_('Spell Checker dictionary was not inited'))
             return
         check_tokens = need_check_tokens(ed)
-        cache = spell_cache if op_use_global_cache else {}
+        
+        # Always use global cache and start timer
+        cache = spell_cache
+        start_cache_timer()
 
         # Load word list temporarily
         cached_dict_set = load_temporal_cached_dictionary()
