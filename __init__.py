@@ -829,9 +829,9 @@ def do_work_word(ed, with_dialog):
           show_on_map = True)
 
 def get_next_pos(x1, y1, is_next):
-    m = ed.attr(MARKERS_GET)
+    m = ed.attr(MARKERS_GET_DICT)
     if not m: return
-    m = [(x, y) for (tag, x, y, *_) in m if tag == MARKTAG]
+    m = [(i['x'], i['y']) for i in m if i['tag'] == MARKTAG]
     if not m: return
 
     if is_next:
