@@ -2,6 +2,7 @@
 * change: Refined dictionary architecture. Replaced generic "Extended Dictionaries" with an auto-generated optimized word list from the active Hunspell dictionary (stored in OS temp). This ensures O(1) lookup speed while correctly respecting language variants.
 * change: Replaced manual "use_global_cache" option with "Smart Global Cache". The cache is now always active for performance but automatically clears after 30 minutes of inactivity to save memory.
 * remove: Removed "Toggle the Extended Dictionary" menu and "use_extended_dictionary" option (no longer needed).
++ add: updated English dicts to newest, from 79k-words to 350k-words.
 
 2025.11.16 (patches by @badrelmers)
 * change: Major performance refactor. High-speed checking is now done against an in-memory Extended Dictionary (ext_dict/*.txt) for O(1) lookups, reducing false positives and checking a 6MB file in ~1.5s.
