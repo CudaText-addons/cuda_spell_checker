@@ -198,8 +198,9 @@ def clear_spell_cache(tag='', info=''):
 
 def start_cache_timer():
     """Start or restart the global spell cache clear timer. every spell check will reset the timer, so the cache will durate for 30min after the last spell check"""
-    timer_proc(TIMER_STOP, "module=cuda_spell_checker;func=clear_spell_cache;", interval=0)    
-    timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=clear_spell_cache;", interval=CACHE_LIFETIME_MS)
+    callback = "module=cuda_spell_checker;func=clear_spell_cache;"
+    timer_proc(TIMER_STOP, callback, interval=0)
+    timer_proc(TIMER_START_ONE, callback, interval=CACHE_LIFETIME_MS)
 
 def is_word_char(c):
     return c.isalnum() or (c in "'_") # allow _ for later ignore words with _
