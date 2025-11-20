@@ -26,6 +26,8 @@ op_confirm_esc               = str_to_bool(ini_read(filename_ini, 'op', 'confirm
 op_file_types                =             ini_read(filename_ini, 'op', 'file_extension_list'       , '*'              )
 op_url_regex                 =             ini_read(filename_ini, 'op', 'url_regex'                 , r'\bhttps?://\S+')
 
+install_inf_events = set()
+
 re_url = re.compile(op_url_regex, 0)
 word_re = re.compile(r"[\w']+")
 
@@ -92,7 +94,7 @@ def set_events_safely(events_to_add, lexer_list='', filter_str=''):
         lexer_list: Comma-separated lexer names (optional)
         filter_str: Filter parameter for certain events (optional)
     """
-    install_inf_events = get_install_inf_events()
+    global install_inf_events
     all_events = install_inf_events | set(events_to_add)
     event_list_str = ','.join(all_events)    
     app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
@@ -920,6 +922,9 @@ class Command:
     active = False
 
     def __init__(self):
+        global install_inf_events
+        install_inf_events = get_install_inf_events()
+        
         try:
             create_hunspell_wordlist(op_lang)
         except Exception as e:
