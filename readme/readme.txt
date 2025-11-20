@@ -32,6 +32,16 @@ For example, for Russian language and Debian OS:
   $ sudo apt-get install hunspell-ru
 
 
+Note: The provided initial link for downloading dictionaries has a limited and potentially outdated selection. As there is no single unified source for all available and up-to-date Hunspell dictionaries, you may need to use external sources to find a specific language or a more current version of a dictionary.
+Alternative and Updated Sources:
+http://app.aspell.net/create (Best for English)
+https://github.com/wooorm/dictionaries
+https://addons.mozilla.org/en-US/firefox/language-tools/
+https://sourceforge.net/projects/wordlist/
+https://extensions.libreoffice.org/
+https://extensions.openoffice.org/
+
+
 Menu items
 ==========
 
