@@ -46,6 +46,58 @@ if sys.platform == "win32":
 sys.path.append(_mydir)
 
 # ============================================================================
+# EVENT MANAGEMENT
+# ============================================================================
+
+def get_install_inf_events():
+    """
+    Read events from install.inf file.
+    Returns a set of event names that are registered in install.inf.
+    """
+    install_inf_path = os.path.join(_mydir, 'install.inf')
+    events = set()
+    
+    if not os.path.exists(install_inf_path):
+        return events
+    
+    try:
+        # Read install.inf and extract events
+        current_section = None
+        with open(install_inf_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                
+                # Check for section headers
+                if line.startswith('[') and line.endswith(']'):
+                    current_section = line[1:-1].lower()
+                    continue
+                
+                # Look for event entries in [item] sections
+                if current_section and current_section.startswith('item'):
+                    if line.startswith('events='):
+                        event_list = line[7:].strip()
+                        if event_list:
+                            events.update(e.strip() for e in event_list.split(','))
+    except Exception as e:
+        print(_("ERROR: Spell Checker: Error reading install.inf: {}").format(e))
+    
+    return events
+
+def set_events_safely(events_to_add, lexer_list='', filter_str=''):
+    """
+    Set events while preserving those from install.inf. because PROC_SET_EVENTS resets all the events including those from install.inf (only events in plugins.ini are preserved).
+    
+    Args:
+        events_to_add: Set or list of event names to add
+        lexer_list: Comma-separated lexer names (optional)
+        filter_str: Filter parameter for certain events (optional)
+    """
+    install_inf_events = get_install_inf_events()
+    all_events = install_inf_events | set(events_to_add)
+    event_list_str = ','.join(all_events)    
+    app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
+
+# ============================================================================
 # HUNSPELL DICTIONARY PARSING
 # ============================================================================
 
@@ -640,8 +692,17 @@ def timer_check(tag='', info=''):
         do_work(ed, False, False)
     timer_editors = []
 
+def lexer_parsed(ed_self):
+    """Event handler for when lexer finishes parsing.
+    Called after lexer has finished parsing (only if parsing took >=600ms)"""
+    # Unsubscribe from on_lexer_parsed to avoid duplicate checks calls when the user change the lexer
+    set_events_safely([])
+    
+    # Perform spell check now that lexer is ready
+    msg_status(_("Spell Checker: Lexer has just finished its parsing. Checking again..."))
+    do_work(ed_self, False, True, False, False)
 
-def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
+def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_subscription=False):
     # work only with remembered editor, until work is finished
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
@@ -652,19 +713,24 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False):
     app_proc(PROC_SET_ESCAPE, False)
     check_tokens = need_check_tokens(editor)
     
+    if check_tokens and on_lexer_parsed_subscription and not with_dialog:
+        # when we call check() on a big file that uses a lexer we will get wrong results because Cudatext takes some time to parse and set tokens (comments, strings..etc), so we need to subscribe to on_lexer_parsed. but this means that the file may be checked twice, one because we clicked check, and one if on_lexer_parsed fires, we cannot prevent this unless the API removes the 600ms limit
+        # Subscribe to on_lexer_parsed event for files that take longer than 600ms to parse
+        set_events_safely(['on_lexer_parsed'])
+        
+    # opening of Markdown file at startup gives not yet parsed file, so check fails
+    if check_tokens and allow_timer:
+        timer_editors.append(editor)
+        timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=600) # no need to wait more than 600ms because we subscribe to on_lexer_parsed event which will fire if lexer parsing takes more than 600ms. the file will be checked twice if on_lexer_parsed fires, we can do nothing to prevent this unless the API removes the 600ms limit
+        return
+    
     # Always use global cache and start/restart the 30-minute global cache clear timer
     cache = spell_cache
     start_cache_timer()
 
     # Load cached dictionary temporarily - will be garbage collected after function ends
     cached_dict_set = load_temporal_cached_dictionary()
-
-    # opening of Markdown file at startup gives not yet parsed file, so check fails
-    if check_tokens and allow_timer:
-        timer_editors.append(editor)
-        timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=1000)
-        return
-
+    
     carets = editor.get_carets()
     if not carets: return
     x1, y1, x2, y2 = carets[0]
@@ -771,9 +837,9 @@ def reset_carets(ed, carets):
     for c in carets[1:]:
         ed.set_caret(*c, CARET_ADD)
 
-def do_work_if_name(ed_self, allow_in_sel, allow_timer=False):
+def do_work_if_name(ed_self, allow_in_sel, allow_timer=False, on_lexer_parsed_subscription=False):
     if is_filetype_ok(ed_self.get_filename()):
-        do_work(ed_self, False, allow_in_sel, allow_timer)
+        do_work(ed_self, False, allow_in_sel, allow_timer, on_lexer_parsed_subscription)
 
 def do_work_word(ed, with_dialog):
     if dict_obj is None:
@@ -861,7 +927,7 @@ class Command:
 
     def check(self):
         Command.active = True
-        do_work(ed, False, True)
+        do_work(ed, False, True, False, True)
 
     def check_suggest(self):
         Command.active = True
@@ -876,14 +942,18 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        do_work_if_name(ed_self, False, True)
+        do_work_if_name(ed_self, False, True, True)
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self, False)
 
     def on_click_right(self, ed_self, state):
         context_menu(ed_self, False)
-
+    
+    def on_lexer_parsed(self, ed_self):
+        """Event handler for when lexer finishes parsing"""
+        lexer_parsed(ed_self)
+        
     def select_dict(self):
         global op_lang
         global dict_obj
