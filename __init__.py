@@ -18,6 +18,9 @@ def str_to_bool(s): return s == '1'
 
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 filename_plugins = os.path.join(app_path(APP_DIR_SETTINGS), 'plugins.ini')
+_mydir = os.path.dirname(__file__)
+filename_install_inf = os.path.join(_mydir, 'install.inf')
+
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 
 op_lang                      =             ini_read(filename_ini, 'op', 'lang'                      , 'en_US'          )
@@ -26,12 +29,12 @@ op_confirm_esc               = str_to_bool(ini_read(filename_ini, 'op', 'confirm
 op_file_types                =             ini_read(filename_ini, 'op', 'file_extension_list'       , '*'              )
 op_url_regex                 =             ini_read(filename_ini, 'op', 'url_regex'                 , r'\bhttps?://\S+')
 
-install_inf_events = set()
+_events_str = ini_read(filename_install_inf, 'item1', 'events', '')
+install_inf_events = {ev.strip() for ev in _events_str.split(',') if ev.strip()}
 
 re_url = re.compile(op_url_regex, 0)
 word_re = re.compile(r"[\w']+")
 
-_mydir = os.path.dirname(__file__)
 _ench = EnchantArchitecture()
 
 # Get temp directory for cached dictionary
@@ -51,40 +54,6 @@ sys.path.append(_mydir)
 # EVENT MANAGEMENT
 # ============================================================================
 
-def get_install_inf_events():
-    """
-    Read events from install.inf file.
-    Returns a set of event names that are registered in install.inf.
-    """
-    install_inf_path = os.path.join(_mydir, 'install.inf')
-    events = set()
-    
-    if not os.path.exists(install_inf_path):
-        return events
-    
-    try:
-        # Read install.inf and extract events
-        current_section = None
-        with open(install_inf_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                
-                # Check for section headers
-                if line.startswith('[') and line.endswith(']'):
-                    current_section = line[1:-1].lower()
-                    continue
-                
-                # Look for event entries in [item] sections
-                if current_section and current_section.startswith('item'):
-                    if line.startswith('events='):
-                        event_list = line[7:].strip()
-                        if event_list:
-                            events.update(e.strip() for e in event_list.split(','))
-    except Exception as e:
-        print(_("ERROR: Spell Checker: Error reading install.inf: {}").format(e))
-    
-    return events
-
 def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     """
     Set events while preserving those from install.inf. because PROC_SET_EVENTS resets all the events including those from install.inf (only events in plugins.ini are preserved).
@@ -94,7 +63,6 @@ def set_events_safely(events_to_add, lexer_list='', filter_str=''):
         lexer_list: Comma-separated lexer names (optional)
         filter_str: Filter parameter for certain events (optional)
     """
-    global install_inf_events
     all_events = install_inf_events | set(events_to_add)
     event_list_str = ','.join(all_events)    
     app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
@@ -922,9 +890,6 @@ class Command:
     active = False
 
     def __init__(self):
-        global install_inf_events
-        install_inf_events = get_install_inf_events()
-        
         try:
             create_hunspell_wordlist(op_lang)
         except Exception as e:
