@@ -455,34 +455,9 @@ def need_check_tokens(ed):
     else:
         return False
 
-def fast_spell_check(word, cached_dict_set=None):
-    """
-    Fast spell check using cached dictionary + enchant fallback.
-    Returns True if word is correct, False if misspelled.
-
-    Args:
-        word: The word to check (preserving original case)
-        cached_dict_set: Optional cached dictionary set. If None, only enchant is used.
-    """
-    # If no cached dictionary available, use enchant only
-    if cached_dict_set is None:
-        return dict_obj.check(word) if dict_obj else True
-
-    # First check: exact match in cached dictionary (very fast O(1) lookup)
-    if word in cached_dict_set:
-        return True
-
-    # Second check: enchant (slower, but handles custom words added by user)
-    if dict_obj:
-        return dict_obj.check(word)
-
-    # If no dict_obj, assume correct to avoid false positives
-    return True
-
 def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_dict_set=None):
     """
     find misspelled words in a line, but ignore words with numbers (v1.0) and words with underscore (my_var_name). and if lexer is active only comments/strings are checked.
-    # TODO: ignore camel case vars (myVarName), like in javascript
 
     Args:
         cached_dict_set: Optional cached dictionary for fast lookups. If None, uses enchant only.
@@ -513,7 +488,10 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
         if sub in cache:
             if cache[sub]:
                 continue
-
+        if sub in cached_dict_set:
+            cache[sub] = True
+            continue
+            
         x_pos = m.start()
         if "'" in sub:
             # Strip all leading apostrophes
@@ -534,21 +512,17 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
         if sub in cache:
             if cache[sub]:
                 continue
-
+        if sub in cached_dict_set:
+            cache[sub] = True
+            continue
+            
         # Filter 1: Skip words with numbers or invalid chars, this ensure the word contains only letters and internal apostrophes. this filters out "my_var", "v1", etc... while correctly keeping "it's"
         if not sub.replace("'", "").isalpha():
             cache[sub] = True # add to cache as a "correct" (ignorable) word. this have effect only if we check the cache in the begining
             continue
 
-
-        # TODO: check speed again with filter 2 and 3 and optimize if needed
-        # Filter 2: Ignore all-caps words (ex: CONSTANTS)
-        if sub.isupper():
-            cache[sub] = True
-            continue
-
-        # Filter 3: Ignore camelCase/MixedCase
-        # This allows "word" (lower) and "Word" (title), but skips "myWord" or "MyWord" (usefull for javascript code).
+        # Filter 2: Ignore camelCase/MixedCase/ALL-CAPS. Logic: If it is not Lowercase AND not Titlecase, it is either UPPER, camelCase, or MixedCase. so skip and cache it.
+        # We check islower first as it's the most common success case.
         if not sub.islower() and not sub.istitle():
             cache[sub] = True
             continue
@@ -568,16 +542,16 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
             kind = ed.get_token(TOKEN_GET_KIND, x_pos, nline)
             if kind not in ('c', 's'):
                 continue
-
+            
         # check spelling of the word and cache it
         # optimized spell check: Use word list first, then enchant
         if sub not in cache:
-            cache[sub] = fast_spell_check(sub, cached_dict_set)
+            cache[sub] = dict_obj.check(sub)
 
         # Skip correctly spelled words
         if cache[sub]:
             continue
-
+            
         # --- We found a misspelled word ---
         count += 1
         res_x.append(x_pos)
@@ -847,7 +821,7 @@ def do_work_word(ed, with_dialog):
         ed.delete(x, y, x + len(sub), y)
         ed.insert(x, y, rep)
     else:
-        if fast_spell_check(sub, cached_dict_set):
+        if dict_obj.check(sub):
             msg_status(_('Word is Ok: "%s"') % sub)
             marker = MARKERS_DELETE_BY_POS
         else:
