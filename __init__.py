@@ -62,6 +62,8 @@ except Exception as ex:
 
 MARKTAG = 105 #unique int for all marker plugins
 
+# Track newly opened files that haven't been checked yet
+newly_opened_files = set()
 
 def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     """
@@ -891,7 +893,18 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        do_work_if_name(ed_self, False, True, True)
+        """Mark file as newly opened, but don't check it yet"""
+        h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
+        newly_opened_files.add(h_ed)
+
+    def on_focus(self, ed_self):
+        """Check file only if it's newly opened AND now focused"""
+        h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
+        
+        # Only check if this file was just opened (is in newly_opened_files)
+        if h_ed in newly_opened_files:
+            newly_opened_files.discard(h_ed)  # Remove from set after checking
+            do_work_if_name(ed_self, False, True, True)
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self, False)
@@ -944,7 +957,11 @@ class Command:
     def config_events(self):
         v = ini_read(filename_plugins, 'events', 'cuda_spell_checker', '')
         b_open   = ',on_open,'        in ',' + v + ','
+        b_focus  = ',on_focus,'       in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
+        
+        # Combine on_open and on_focus into single option for user
+        b_check_on_open = b_open and b_focus
 
         DLG_W = 630
         DLG_H = 130
@@ -952,20 +969,20 @@ class Command:
         c1 = chr(1)
 
         res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
-              + [c1.join(['type=check' , 'cap='+_('Handle event "on_open" (opening of a file)')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_open)])  ]
-              + [c1.join(['type=check' , 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
+              + [c1.join(['type=check' , 'cap='+_('Check spelling when opening files')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_check_on_open)])  ]
+              + [c1.join(['type=check' , 'cap='+_('Check spelling while editing (after pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
               + [c1.join(['type=button', 'cap='+_('&OK')   , 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)]), 'ex0=1']
               + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6   , DLG_H-30, DLG_W-6       , 0)])         ]
               ),
               get_dict = True)
         if res is None: return
 
-        b_open   = str_to_bool(res[0])
+        b_check_on_open = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
 
         v = []
-        if b_open:
-            v += ['on_open']
+        if b_check_on_open:
+            v += ['on_open', 'on_focus']  # Both events needed for this feature
         if b_change:
             v += ['on_change_slow']
 
