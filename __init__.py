@@ -40,9 +40,11 @@ _ench = EnchantArchitecture()
 # Get temp directory for cached dictionary
 TEMP_DICT_DIR = os.path.join(tempfile.gettempdir(), 'cuda_spell_checker')
 
-# Global temporal cache (30 minutes lifetime)
+# Global unified cache (30 minutes lifetime): contains dictionary words and Enchant responses
+# Maps word -> True (correct) or False (misspelled)
 CACHE_LIFETIME_MS = 30 * 60 * 1000
 spell_cache = {}
+cache_loaded = False  # Track if dictionary has been pre-loaded into cache
 
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
 if sys.platform == "win32":
@@ -50,9 +52,18 @@ if sys.platform == "win32":
 
 sys.path.append(_mydir)
 
-# ============================================================================
-# EVENT MANAGEMENT
-# ============================================================================
+try:
+    enchant = importlib.import_module(_ench)
+    #import enchant
+    dict_obj = enchant.Dict(op_lang)
+except Exception as ex:
+    msg_box(str(ex), MB_OK+MB_ICONERROR)
+    dict_obj = None
+
+MARKTAG = 105 #unique int for all marker plugins
+
+# Track newly opened files that haven't been checked yet
+newly_opened_files = set()
 
 def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     """
@@ -66,10 +77,6 @@ def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     all_events = install_inf_events | set(events_to_add)
     event_list_str = ','.join(all_events)    
     app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
-
-# ============================================================================
-# HUNSPELL DICTIONARY PARSING
-# ============================================================================
 
 def parse_hunspell_dic(lang_code):
     """
@@ -124,7 +131,6 @@ def parse_hunspell_dic(lang_code):
         print(_("ERROR: Spell Checker: Error parsing Hunspell dictionary: {}").format(e))
         return set()
 
-
 def create_hunspell_wordlist(lang_code):
     """
     Create a cached Hunspell-compatible word list from Hunspell dictionary.
@@ -163,22 +169,21 @@ def create_hunspell_wordlist(lang_code):
         msg_status(_("Spell Checker: Error saving word list: {}").format(e))
         return False
 
-
-# ============================================================================
-# LOAD CACHED DICTIONARY INTO A SET FOR FAST LOOKUP
-# ============================================================================
-
-def load_temporal_cached_dictionary():
+def load_dictionary_into_cache():
     """
-    Load the auto-generated Hunspell-compatible dictionary words into a set for O(1) lookup.
-    This is called only when spell-checking and the set is discarded after use.
+    Load the Hunspell dictionary words into the unified spell_cache.
+    All dictionary words are pre-populated with True (correct spelling).
+    This is called once and persists for 30 minutes.
 
     The cached dictionary file (e.g., en_US.txt with ~70k words) is loaded from temp directory.
     If it doesn't exist, it will be created from the Hunspell dictionary.
-
-    Returns:
-        set: Set of words for fast lookup, or empty set if unavailable
     """
+    global spell_cache, cache_loaded
+    
+    # If already loaded, return early
+    if cache_loaded:
+        return
+    
     hunspell_txt_name = f'{op_lang}.txt'
     hunspell_txt_path = os.path.join(TEMP_DICT_DIR, hunspell_txt_name)
 
@@ -187,35 +192,29 @@ def load_temporal_cached_dictionary():
         msg_status(_("Spell Checker: Cached word list not found. Creating from dictionary..."))
         if not create_hunspell_wordlist(op_lang):
             msg_status(_("Spell Checker: Could not create cached word list. Using Enchant only."))
-            return set()
+            cache_loaded = True  # Mark as loaded even if failed, to avoid repeated attempts
+            return
 
-    # Load the cached word list (assume clean, use fast splitlines)
+    # Load the cached word list and pre-populate spell_cache
     try:
         with open(hunspell_txt_path, 'r', encoding='utf-8') as f:
-            word_list = set(f.read().splitlines())
-        msg_status(_("Spell Checker: Loaded {} words from cached word list '{}'").format(len(word_list), hunspell_txt_name))
-        return word_list
+            word_list = f.read().splitlines()
+        
+        # Pre-populate cache with all dictionary words set to True
+        for word in word_list:
+            spell_cache[word] = True
+        
+        cache_loaded = True
+        msg_status(_("Spell Checker: Loaded {} words into cache from '{}'").format(len(word_list), hunspell_txt_name))
     except Exception as e:
         msg_status(_("Spell Checker: Error loading cached word list: {}").format(e))
-        return set()
-
-# ============================================================================
-# ENCHANT INITIALIZATION
-# ============================================================================
-try:
-    enchant = importlib.import_module(_ench)
-    #import enchant
-    dict_obj = enchant.Dict(op_lang)
-except Exception as ex:
-    msg_box(str(ex), MB_OK+MB_ICONERROR)
-    dict_obj = None
-
-MARKTAG = 105 #unique int for all marker plugins
+        cache_loaded = True  # Mark as loaded to avoid repeated attempts
 
 def clear_spell_cache(tag='', info=''):
-    """Clear the global spell cache after 30 minutes"""
-    global spell_cache
+    """Clear the unified spell cache after 30 minutes"""
+    global spell_cache, cache_loaded
     spell_cache.clear()
+    cache_loaded = False
     msg_status(_('Spell Checker: Cache cleared after 30 minutes'))
 
 def start_cache_timer():
@@ -455,37 +454,11 @@ def need_check_tokens(ed):
     else:
         return False
 
-def fast_spell_check(word, cached_dict_set=None):
-    """
-    Fast spell check using cached dictionary + enchant fallback.
-    Returns True if word is correct, False if misspelled.
-
-    Args:
-        word: The word to check (preserving original case)
-        cached_dict_set: Optional cached dictionary set. If None, only enchant is used.
-    """
-    # If no cached dictionary available, use enchant only
-    if cached_dict_set is None:
-        return dict_obj.check(word) if dict_obj else True
-
-    # First check: exact match in cached dictionary (very fast O(1) lookup)
-    if word in cached_dict_set:
-        return True
-
-    # Second check: enchant (slower, but handles custom words added by user)
-    if dict_obj:
-        return dict_obj.check(word)
-
-    # If no dict_obj, assume correct to avoid false positives
-    return True
-
-def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_dict_set=None):
+def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
     """
     find misspelled words in a line, but ignore words with numbers (v1.0) and words with underscore (my_var_name). and if lexer is active only comments/strings are checked.
-    # TODO: ignore camel case vars (myVarName), like in javascript
 
-    Args:
-        cached_dict_set: Optional cached dictionary for fast lookups. If None, uses enchant only.
+    Uses unified spell_cache which contains pre-loaded dictionary words and runtime spell-check results.
 
     Returns list of misspelled word positions.
     """
@@ -509,11 +482,19 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
     for m in word_re.finditer(line, x_start, end_pos):
         sub = m.group()
 
-        # we repeat the cache check here despite we do it at the end, doing it here reduces a lot of consumed time because we bypass all the following checks
+        # Check cache first (includes both pre-loaded dictionary and runtime results)
         if sub in cache:
-            if cache[sub]:
+            if cache[sub]:  # known correct
                 continue
-
+            # do not do this, it seems logic and faster (and it is faster), but it is wrong, ex: the first check will find http://good.com , if com was marked as bad somewhere else, here we will skip and mark this word as misspelled, but it is a link it should not be marked as bad, so it needs to pass the following filters before considering it bad 
+            # else:
+                # known wrong from previous run
+                # count += 1
+                # res_x.append(m.start())
+                # res_y.append(nline)
+                # res_n.append(len(sub))
+                # continue
+                
         x_pos = m.start()
         if "'" in sub:
             # Strip all leading apostrophes
@@ -530,30 +511,23 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
 
         # so now sub is guaranteed to contain only characters from {letters, numbers, apostrophes (internal), underscores}
 
-        # checking the cache here again is not bad, it reduces functions calls a litle bit and adds no overhead
+        # Check cache again after stripping apostrophes
         if sub in cache:
             if cache[sub]:
                 continue
-
+                
         # Filter 1: Skip words with numbers or invalid chars, this ensure the word contains only letters and internal apostrophes. this filters out "my_var", "v1", etc... while correctly keeping "it's"
         if not sub.replace("'", "").isalpha():
-            cache[sub] = True # add to cache as a "correct" (ignorable) word. this have effect only if we check the cache in the begining
+            cache[sub] = True # add to cache as a "correct" (ignorable) word
             continue
 
-
-        # TODO: check speed again with filter 2 and 3 and optimize if needed
-        # Filter 2: Ignore all-caps words (ex: CONSTANTS)
-        if sub.isupper():
-            cache[sub] = True
-            continue
-
-        # Filter 3: Ignore camelCase/MixedCase
-        # This allows "word" (lower) and "Word" (title), but skips "myWord" or "MyWord" (usefull for javascript code).
+        # Filter 2: Ignore camelCase/MixedCase/ALL-CAPS. Logic: If it is not Lowercase AND not Titlecase, it is either UPPER, camelCase, or MixedCase. so skip and cache it.
+        # We check islower first as it's the most common success case.
         if not sub.islower() and not sub.istitle():
             cache[sub] = True
             continue
-
-        # Filter 4: Skip URL
+            
+        # Filter 3: Skip URL
         if url_ranges:
             in_url = False
             for r_start, r_end in url_ranges:
@@ -563,21 +537,30 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
             if in_url:
                 continue
 
-        # Filter 5: Skip non-comment/string tokens (for files with a lexer)
+        # Filter 4: Skip non-comment/string tokens (for files with a lexer)
         if check_tokens:
             kind = ed.get_token(TOKEN_GET_KIND, x_pos, nline)
             if kind not in ('c', 's'):
                 continue
-
-        # check spelling of the word and cache it
-        # optimized spell check: Use word list first, then enchant
-        if sub not in cache:
-            cache[sub] = fast_spell_check(sub, cached_dict_set)
-
+            
+        if sub in cache:
+            if cache[sub]:
+                continue
+            else:
+                # known wrong from previous run
+                count += 1
+                res_x.append(x_pos)
+                res_y.append(nline)
+                res_n.append(len(sub))
+                continue
+        else:
+            # Check spelling and cache the result
+            cache[sub] = dict_obj.check(sub)
+            
         # Skip correctly spelled words
         if cache[sub]:
             continue
-
+            
         # --- We found a misspelled word ---
         count += 1
         res_x.append(x_pos)
@@ -586,13 +569,12 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_d
 
     return (count, res_x, res_y, res_n)
 
-def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, cached_dict_set=None):
+def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
     """
     Find and interactively fix misspelled words in a line (dialog mode).
     Returns (count, replaced) or None if user cancels.
 
-    Args:
-        cached_dict_set: Optional cached dictionary for fast lookups.
+    Uses unified spell_cache.
     """
     count = 0
     replaced = 0
@@ -603,7 +585,7 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, ca
         line = ed.get_text_line(nline)
 
         # Use do_check_line to find all misspelled words
-        _, res_x, res_y, res_n = do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache, cached_dict_set)
+        _, res_x, res_y, res_n = do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache)
 
         # Find the first misspelled word we haven't checked yet
         word_found = False
@@ -694,12 +676,12 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_su
         timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=600) # no need to wait more than 600ms because we subscribe to on_lexer_parsed event which will fire if lexer parsing takes more than 600ms. the file will be checked twice if on_lexer_parsed fires, we can do nothing to prevent this unless the API removes the 600ms limit
         return
     
-    # Always use global cache and start/restart the 30-minute global cache clear timer
+    # Always use unified cache and start/restart the 30-minute cache clear timer
     cache = spell_cache
     start_cache_timer()
 
-    # Load cached dictionary temporarily - will be garbage collected after function ends
-    cached_dict_set = load_temporal_cached_dictionary()
+    # Load dictionary into cache if not already loaded
+    load_dictionary_into_cache()
     
     carets = editor.get_carets()
     if not carets: return
@@ -758,13 +740,13 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_su
         x_end = x2 if nline == y2 - 1 else -1
 
         if not with_dialog:
-            res = do_check_line(editor, nline, line, x_start, x_end, check_tokens, cache, cached_dict_set)
+            res = do_check_line(editor, nline, line, x_start, x_end, check_tokens, cache)
             count_all += res[0]
             res_x += res[1]
             res_y += res[2]
             res_n += res[3]
         else:
-            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache, cached_dict_set)
+            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache)
             if res is None:
                 if count_all > 0:
                     reset_carets(editor, carets)
@@ -773,7 +755,6 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_su
             count_all += res[0]
             count_replace += res[1]
 
-    # Word list will be garbage collected here when function exits
     app_proc(PROC_PROGRESSBAR, -1) # hide progressbar
 
     if not with_dialog:
@@ -828,10 +809,10 @@ def do_work_word(ed, with_dialog):
     x = info['x']
     y = info['y']
 
-    # Load word list temporarily for single word check
-    cached_dict_set = load_temporal_cached_dictionary()
+    # Load dictionary into cache if not already loaded
+    load_dictionary_into_cache()
     
-    # Start cache timer for global cache
+    # Start cache timer
     start_cache_timer()
 
     if with_dialog:
@@ -847,7 +828,7 @@ def do_work_word(ed, with_dialog):
         ed.delete(x, y, x + len(sub), y)
         ed.insert(x, y, rep)
     else:
-        if fast_spell_check(sub, cached_dict_set):
+        if dict_obj.check(sub):
             msg_status(_('Word is Ok: "%s"') % sub)
             marker = MARKERS_DELETE_BY_POS
         else:
@@ -912,7 +893,26 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        do_work_if_name(ed_self, False, True, True)
+        """Mark file as newly opened. If it's already focused, check it immediately."""
+        h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
+        newly_opened_files.add(h_ed)
+        
+        # Check if this editor is currently focused
+        # If yes, check immediately (because on_focus won't fire)
+        is_focused = ed_self.get_prop(PROP_FOCUSED)
+        if is_focused:
+            # File is already focused, check it now
+            newly_opened_files.discard(h_ed)
+            do_work_if_name(ed_self, False, True, True)
+
+    def on_focus(self, ed_self):
+        """Check file only if it's newly opened AND now focused"""
+        h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
+        
+        # Only check if this file was just opened (is in newly_opened_files)
+        if h_ed in newly_opened_files:
+            newly_opened_files.discard(h_ed)  # Remove from set after checking
+            do_work_if_name(ed_self, False, True, True)
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self, False)
@@ -936,6 +936,8 @@ class Command:
         
         # Clear cache when user changes dictionary
         spell_cache.clear()
+        global cache_loaded
+        cache_loaded = False
         
         # Regenerate cached dictionary for new language
         try:
@@ -963,7 +965,11 @@ class Command:
     def config_events(self):
         v = ini_read(filename_plugins, 'events', 'cuda_spell_checker', '')
         b_open   = ',on_open,'        in ',' + v + ','
+        b_focus  = ',on_focus,'       in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
+        
+        # Combine on_open and on_focus into single option for user
+        b_check_on_open = b_open and b_focus
 
         DLG_W = 630
         DLG_H = 130
@@ -971,20 +977,20 @@ class Command:
         c1 = chr(1)
 
         res = dlg_custom(_('Configure events'), DLG_W, DLG_H, '\n'.join([]
-              + [c1.join(['type=check' , 'cap='+_('Handle event "on_open" (opening of a file)')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_open)])  ]
-              + [c1.join(['type=check' , 'cap='+_('Handle event "on_change_slow" (editing of file + pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
+              + [c1.join(['type=check' , 'cap='+_('Check spelling when opening files')             , 'pos=6,6,400,0' , 'val='+bool_to_str(b_check_on_open)])  ]
+              + [c1.join(['type=check' , 'cap='+_('Check spelling while editing (after pause)'), 'pos=6,36,400,0', 'val='+bool_to_str(b_change)])]
               + [c1.join(['type=button', 'cap='+_('&OK')   , 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W*2-12, DLG_H-30, DLG_W-BTN_W-12, 0)]), 'ex0=1']
               + [c1.join(['type=button', 'cap='+_('Cancel'), 'pos=%d,%d,%d,%d'%(DLG_W-BTN_W-6   , DLG_H-30, DLG_W-6       , 0)])         ]
               ),
               get_dict = True)
         if res is None: return
 
-        b_open   = str_to_bool(res[0])
+        b_check_on_open = str_to_bool(res[0])
         b_change = str_to_bool(res[1])
 
         v = []
-        if b_open:
-            v += ['on_open']
+        if b_check_on_open:
+            v += ['on_open', 'on_focus']  # Both events needed for this feature
         if b_change:
             v += ['on_change_slow']
 
@@ -1001,12 +1007,12 @@ class Command:
             return
         check_tokens = need_check_tokens(ed)
         
-        # Always use global cache and start timer
+        # Always use unified cache and start timer
         cache = spell_cache
         start_cache_timer()
 
-        # Load word list temporarily
-        cached_dict_set = load_temporal_cached_dictionary()
+        # Load dictionary into cache if not already loaded
+        load_dictionary_into_cache()
 
         total_text = ed.get_text_all()
         lines = total_text.splitlines()
@@ -1038,7 +1044,7 @@ class Command:
                         break
             line = lines[idx]
             nline = idx
-            res = do_check_line(ed, nline, line, 0, -1, check_tokens, cache, cached_dict_set)
+            res = do_check_line(ed, nline, line, 0, -1, check_tokens, cache)
             count_all += res[0]
             for i in range(res[0]):
                 x_pos = res[1][i]
