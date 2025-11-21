@@ -57,7 +57,7 @@ Items in the "Options / Settings-plugins / Spell Checker" menu:
 
 - "Select language": Shows menu-dialog to choose one of installed spelling dictionaries.
 - "Configure": Edit settings file (it has the INI format).
-- "Configure events": Open dialog to configure events of plugin: on_open and on_change_slow.
+- "Configure events": Open dialog to configure events: 'Check spelling when opening files' and Check spelling while editing (after pause).
   It writes to the file "settings/plugins.ini".
 
 
@@ -86,29 +86,10 @@ SynWrite will save this change to the file "data/lexlib/<lexer>.cuda-lexmap",
 you need to copy/update this file to the CudaText folder "data/lexlib".
 
 2)
-You can enable permanent checking after a) file opening, b) text editing.
-See the topic above in this readme-file, about menu "Options / Settings-plugins / Spell Checker",
-you can do changes from that menu too, it is the same as editing file install.inf by hands.
-
-2a) For file opening.
-Use API event "on_open", write it to file "py/cuda_spell_checker/install.inf" like this:
-[item1]
-section=events
-events=on_open
-
-2b) For text editing.
-Use API event "on_change_slow", write it to the same install.inf file like this:
-[item1]
-section=events
-events=on_change_slow
-
-2c) If both API events are needed, write them comma-separated:
-[item1]
-section=events
-events=on_open,on_change_slow
-
-Note: file install.inf is overwritten on each plugin update/installation,
-so backup this file.
+You can enable permanent checking after:
+  a) file opening (Check spelling when opening files)
+  b) text editing (Check spelling while editing (after pause)).
+See the topic above in this readme-file, about menu "Options / Settings-plugins / Spell Checker"
 
 3)
 High-Speed Checking and Smart Caching:
@@ -148,7 +129,7 @@ Options are:
 
 - "confirm_esc_key" (0/1): Allows to show confirmation when user presses Esc-key during long spell-checking.
 
-- "file_extension_list": Which files to check automatically, by events (on_change_slow, on_open).
+- "file_extension_list": Which files to check automatically, by events (Check spelling when opening files, Check spelling while editing (after pause)).
   Possible values:
     - "" (empty value, without quotes): Disable for all files.
     - "*" (star character, without quotes): Enable for all files.
