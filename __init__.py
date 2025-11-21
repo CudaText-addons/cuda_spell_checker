@@ -893,9 +893,17 @@ class Command:
         do_work_word(ed, True)
 
     def on_open(self, ed_self):
-        """Mark file as newly opened, but don't check it yet"""
+        """Mark file as newly opened. If it's already focused, check it immediately."""
         h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
         newly_opened_files.add(h_ed)
+        
+        # Check if this editor is currently focused
+        # If yes, check immediately (because on_focus won't fire)
+        is_focused = ed_self.get_prop(PROP_FOCUSED)
+        if is_focused:
+            # File is already focused, check it now
+            newly_opened_files.discard(h_ed)
+            do_work_if_name(ed_self, False, True, True)
 
     def on_focus(self, ed_self):
         """Check file only if it's newly opened AND now focused"""
