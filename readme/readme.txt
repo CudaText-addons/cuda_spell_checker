@@ -92,11 +92,12 @@ You can enable permanent checking after:
 See the topic above in this readme-file, about menu "Options / Settings-plugins / Spell Checker"
 
 3)
-High-Speed Checking and Smart Caching:
-The plugin uses a modern, high-speed checking mechanism. 
-- It automatically generates an optimized word list from your active Hunspell dictionary into the OS temporary folder. This allows for instant O(1) lookups during spell checking.
-- It features an always-on "Smart Global Cache". Once a word is checked (whether correct or misspelled), it is remembered in memory. This makes successive spell-checks of the same or different files significantly faster.
-- To prevent memory issues, this global cache is automatically cleared after 30 minutes of inactivity (no spell checking performed).
+High-Speed Checking and Persistent Caching:
+The plugin uses a modern, high-speed checking mechanism backed by a persistent file cache.
+
+- **Persistent Smart Cache**: The cache is saved to disk (JSON format in TEMP folder). This means spell checking data is preserved even if you restart CudaText, making subsequent checks instantaneous.
+- **Configurable Lifetime**: You can control how long the cache persists via the `cache_lifetime` option (default: 60 minutes).
+- **Smart Dictionary Updates**: The plugin automatically detects if your source Hunspell dictionary (`.dic` file) has been updated by monitoring the file size and timestamp. If an update is detected, the cache is automatically cleared and regenerated to ensure accuracy.
 
 4)
 Programmer-Specific Filters: To reduce false positives in source code, the plugin automatically skips checking words that are:
@@ -138,6 +139,10 @@ Options are:
 
 - "url_regex": RegEx (regular expression) which finds URLs to skip them on checking. Avoid complex RegEx here, it's slower.
 
+- "cache_lifetime": Controls the duration (in minutes) of the persistent cache.
+    - 0: Keep persistent cache forever (or until dictionary update).
+    - >0: Reset the persistent cache file every X minutes.
+    - Default: 60.
 
 About
 =====

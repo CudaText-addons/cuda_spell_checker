@@ -1,3 +1,8 @@
+2025.11.21 (patches by @badrelmers)
++ add: Implemented "Persistent Smart Cache". Spell check results are now saved to disk (JSON), preserving the cache across CudaText restarts.
++ add: New option "cache_lifetime" (default 60 min). Controls how long the persistent cache lasts. Set to 0 for infinite duration.
+* change: "Smart Dictionary Update": Automatically detects if the source Hunspell dictionary (.dic) has been modified (by checking file size and timestamp) and regenerates the optimized word list only when necessary.
+
 2025.11.19 (patches by @badrelmers)
 * change: Refined dictionary architecture. Replaced generic "Extended Dictionaries" with an auto-generated optimized word list from the active Hunspell dictionary (stored in OS temp). This ensures O(1) lookup speed while correctly respecting language variants.
 * change: Replaced manual "use_global_cache" option with "Smart Global Cache". The cache is now always active for performance but automatically clears after 30 minutes of inactivity to save memory.
