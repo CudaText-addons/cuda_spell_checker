@@ -75,20 +75,20 @@ newly_opened_files = set()
 def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     """
     Set events while preserving those from install.inf. because PROC_SET_EVENTS resets all the events including those from install.inf (only events in plugins.ini are preserved).
-    
+
     Args:
         events_to_add: Set or list of event names to add
         lexer_list: Comma-separated lexer names (optional)
         filter_str: Filter parameter for certain events (optional)
     """
     all_events = install_inf_events | set(events_to_add)
-    event_list_str = ','.join(all_events)    
+    event_list_str = ','.join(all_events)
     app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
 
 def get_hunspell_dict_path(lang_code):
     """
     Get the path to the Hunspell dictionary file for a language.
-    
+
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
@@ -102,7 +102,7 @@ def get_hunspell_dict_path(lang_code):
     else:
         print('ERROR: Spell Checker cannot find Hunspell dicts, OS: '+suffix)
         return None
-    
+
     return os.path.join(dic_dir, lang_code + '.dic')
 
 def get_dict_info(lang_code):
@@ -142,30 +142,30 @@ def is_dict_updated(lang_code):
     current_info = get_dict_info(lang_code)
     if current_info is None:
         return False
-    
+
     timestamps = load_timestamps()
     saved_info = timestamps.get(lang_code)
-    
+
     # If no saved info, dictionary is "new"
     if saved_info is None:
         timestamps[lang_code] = current_info
         save_timestamps(timestamps)
         return True
-    
+
     # Check file size first (more likely to change, user may use an old dictionary so checking size is more robust)
     if current_info['size'] != saved_info.get('size'):
         # Size changed, dictionary was updated
         timestamps[lang_code] = current_info
         save_timestamps(timestamps)
         return True
-    
+
     # If size is the same, check timestamp
     if current_info['timestamp'] > saved_info.get('timestamp', 0):
         # Timestamp changed, dictionary was updated
         timestamps[lang_code] = current_info
         save_timestamps(timestamps)
         return True
-    
+
     return False
 
 def get_persistent_cache_path(lang_code):
@@ -178,7 +178,7 @@ def parse_hunspell_dic(lang_code):
     Returns a set of words.
     """
     dic_file = get_hunspell_dict_path(lang_code)
-    
+
     if not dic_file or not os.path.exists(dic_file):
         msg_status(_("Spell Checker: Could not find Hunspell dictionary for {}").format(lang_code))
         return set()
@@ -216,7 +216,7 @@ def create_hunspell_wordlist(lang_code):
     Create a cached Hunspell-compatible word list from Hunspell dictionary.
     Saves it to temp folder 'cuda_spell_checker' with the language code name.
     Only recreates if dictionary file size or timestamp changed.
-    
+
     Args:
         lang_code: Language code like 'en_US', 'de_DE', etc.
     """
@@ -269,10 +269,10 @@ def create_hunspell_wordlist(lang_code):
 def load_persistent_cache(lang_code):
     """Load persistent cache from disk."""
     cache_file = get_persistent_cache_path(lang_code)
-    
+
     if not os.path.exists(cache_file):
         return {}
-    
+
     # Check if cache has expired
     if op_cache_lifetime > 0:
         cache_age_minutes = (time.time() - os.path.getmtime(cache_file)) / 60
@@ -284,7 +284,7 @@ def load_persistent_cache(lang_code):
             except:
                 pass
             return {}
-    
+
     try:
         with open(cache_file, 'r', encoding='utf-8') as f:
             cache_data = json.load(f)
@@ -297,19 +297,19 @@ def load_persistent_cache(lang_code):
 def save_persistent_cache(lang_code, cache_data):
     """Save persistent cache to disk."""
     global cache_needs_save
-    
+
     if not cache_needs_save:
         return
-    
+
     cache_file = get_persistent_cache_path(lang_code)
-    
+
     try:
         if not os.path.isdir(TEMP_DICT_DIR):
             os.makedirs(TEMP_DICT_DIR)
-        
+
         with open(cache_file, 'w', encoding='utf-8') as f:
             json.dump(cache_data, f, separators=(',', ':'))  # Compact format for speed
-        
+
         cache_needs_save = False
         # Don't show status message here to avoid spam
     except Exception as e:
@@ -321,14 +321,14 @@ def load_dictionary_into_cache():
     Only loads base dictionary if persistent cache doesn't exist.
     """
     global spell_cache, cache_loaded, cache_last_save_time
-    
+
     # If already loaded, return early
     if cache_loaded:
         return
-    
+
     # Load persistent cache first
     persistent_cache = load_persistent_cache(op_lang)
-    
+
     # If persistent cache exists and is not empty, use it
     # (it already contains base dictionary words marked as True)
     if persistent_cache:
@@ -337,7 +337,7 @@ def load_dictionary_into_cache():
         cache_last_save_time = time.time()
         msg_status(_("Spell Checker: Loaded {} entries from persistent cache").format(len(persistent_cache)))
         return
-    
+
     # Persistent cache doesn't exist or is empty, need to load base dictionary
     hunspell_txt_name = f'{op_lang}.txt'
     hunspell_txt_path = os.path.join(TEMP_DICT_DIR, hunspell_txt_name)
@@ -354,16 +354,16 @@ def load_dictionary_into_cache():
     try:
         with open(hunspell_txt_path, 'r', encoding='utf-8') as f:
             word_list = f.read().splitlines()
-        
+
         # Add dictionary words to cache
         for word in word_list:
             spell_cache[word] = True
-        
+
         cache_loaded = True
         cache_last_save_time = time.time()
-        
+
         msg_status(_("Spell Checker: Loaded {} base dictionary words into cache").format(len(word_list)))
-        
+
     except Exception as e:
         msg_status(_("Spell Checker: Error loading cached word list: {}").format(e))
         cache_loaded = True  # Mark as loaded to avoid repeated attempts
@@ -372,11 +372,11 @@ def load_dictionary_into_cache():
 def clear_spell_cache(tag='', info=''):
     """Clear the spell cache after cache_lifetime expires."""
     global spell_cache, cache_loaded, cache_last_save_time
-    
+
     if op_cache_lifetime == 0:
         # Cache is persistent forever, don't clear
         return
-    
+
     # Delete persistent cache file
     cache_file = get_persistent_cache_path(op_lang)
     if os.path.exists(cache_file):
@@ -384,7 +384,7 @@ def clear_spell_cache(tag='', info=''):
             os.remove(cache_file)
         except:
             pass
-    
+
     spell_cache.clear()
     cache_loaded = False
     cache_last_save_time = 0
@@ -395,9 +395,9 @@ def start_cache_timer():
     if op_cache_lifetime == 0:
         # Cache is persistent forever, no timer needed
         return
-    
+
     global cache_last_save_time
-    
+
     # Only restart timer if cache was just loaded
     if cache_last_save_time == 0 or (time.time() - cache_last_save_time) < 60:
         callback = "module=cuda_spell_checker;func=clear_spell_cache;"
@@ -669,7 +669,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
         if sub in cache:
             if cache[sub]:  # known correct
                 continue
-            # do not do this, it seems logic and faster (and it is faster), but it is wrong, ex: the first check will find http://good.com , if com was marked as bad somewhere else, here we will skip and mark this word as misspelled, but it is a link it should not be marked as bad, so it needs to pass the following filters before considering it bad 
+            # do not do this, it seems logic and faster (and it is faster), but it is wrong, ex: the first check will find http://good.com , if com was marked as bad somewhere else, here we will skip and mark this word as misspelled, but it is a link it should not be marked as bad, so it needs to pass the following filters before considering it bad
             # else:
                 # known wrong from previous run
                 # count += 1
@@ -677,7 +677,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
                 # res_y.append(nline)
                 # res_n.append(len(sub))
                 # continue
-                
+
         x_pos = m.start()
         if "'" in sub:
             # Strip all leading apostrophes
@@ -698,7 +698,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
         if sub in cache:
             if cache[sub]:
                 continue
-                
+
         # Filter 1: Skip words with numbers or invalid chars, this ensure the word contains only letters and internal apostrophes. this filters out "my_var", "v1", etc... while correctly keeping "it's"
         if not sub.replace("'", "").isalpha():
             cache[sub] = True # add to cache as a "correct" (ignorable) word
@@ -711,7 +711,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
             cache[sub] = True
             cache_needs_save = True
             continue
-            
+
         # Filter 3: Skip URL
         if url_ranges:
             in_url = False
@@ -727,7 +727,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
             kind = ed.get_token(TOKEN_GET_KIND, x_pos, nline)
             if kind not in ('c', 's'):
                 continue
-            
+
         if sub in cache:
             if cache[sub]:
                 continue
@@ -742,11 +742,11 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
             # Check spelling and cache the result
             cache[sub] = dict_obj.check(sub)
             cache_needs_save = True
-            
+
         # Skip correctly spelled words
         if cache[sub]:
             continue
-            
+
         # --- We found a misspelled word ---
         count += 1
         res_x.append(x_pos)
@@ -837,7 +837,7 @@ def lexer_parsed(ed_self):
     Called after lexer has finished parsing (only if parsing took >=600ms)"""
     # Unsubscribe from on_lexer_parsed to avoid duplicate checks calls when the user change the lexer
     set_events_safely([])
-    
+
     # Perform spell check now that lexer is ready
     msg_status(_("Spell Checker: Lexer has just finished its parsing. Checking again..."))
     do_work(ed_self, False, True, False, False)
@@ -845,7 +845,7 @@ def lexer_parsed(ed_self):
 def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_subscription=False):
     # work only with remembered editor, until work is finished
     global cache_needs_save
-    
+
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
 
@@ -854,25 +854,25 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_su
     percent = -1
     app_proc(PROC_SET_ESCAPE, False)
     check_tokens = need_check_tokens(editor)
-    
+
     if check_tokens and on_lexer_parsed_subscription and not with_dialog:
         # when we call check() on a big file that uses a lexer we will get wrong results because Cudatext takes some time to parse and set tokens (comments, strings..etc), so we need to subscribe to on_lexer_parsed. but this means that the file may be checked twice, one because we clicked check, and one if on_lexer_parsed fires, we cannot prevent this unless the API removes the 600ms limit
         # Subscribe to on_lexer_parsed event for files that take longer than 600ms to parse
         set_events_safely(['on_lexer_parsed'])
-        
+
     # opening of Markdown file at startup gives not yet parsed file, so check fails
     if check_tokens and allow_timer:
         timer_editors.append(editor)
         timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=600) # no need to wait more than 600ms because we subscribe to on_lexer_parsed event which will fire if lexer parsing takes more than 600ms. the file will be checked twice if on_lexer_parsed fires, we can do nothing to prevent this unless the API removes the 600ms limit
         return
-    
+
     # Always use unified cache and start/restart the 30-minute cache clear timer
     cache = spell_cache
     start_cache_timer()
 
     # Load dictionary into cache if not already loaded
     load_dictionary_into_cache()
-    
+
     carets = editor.get_carets()
     if not carets: return
     x1, y1, x2, y2 = carets[0]
@@ -974,7 +974,7 @@ def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_su
             0, 0, 0,
             0, 0, op_underline_style, 0,
             show_on_map = True)
-            
+
     if with_dialog and (count_all > 0):
         reset_carets(editor, carets)
 
@@ -1008,7 +1008,7 @@ def do_work_word(ed, with_dialog):
 
     # Load dictionary into cache if not already loaded
     load_dictionary_into_cache()
-    
+
     # Start cache timer
     start_cache_timer()
 
@@ -1093,7 +1093,7 @@ class Command:
         """Mark file as newly opened. If it's already focused, check it immediately."""
         h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
         newly_opened_files.add(h_ed)
-        
+
         # Check if this editor is currently focused
         # If yes, check immediately (because on_focus won't fire)
         is_focused = ed_self.get_prop(PROP_FOCUSED)
@@ -1105,7 +1105,7 @@ class Command:
     def on_focus(self, ed_self):
         """Check file only if it's newly opened AND now focused"""
         h_ed = ed_self.get_prop(PROP_HANDLE_SELF)
-        
+
         # Only check if this file was just opened (is in newly_opened_files)
         if h_ed in newly_opened_files:
             newly_opened_files.discard(h_ed)  # Remove from set after checking
@@ -1116,11 +1116,11 @@ class Command:
 
     def on_click_right(self, ed_self, state):
         context_menu(ed_self, False)
-    
+
     def on_lexer_parsed(self, ed_self):
         """Event handler for when lexer finishes parsing"""
         lexer_parsed(ed_self)
-        
+
     def select_dict(self):
         global op_lang
         global dict_obj
@@ -1130,18 +1130,18 @@ class Command:
         op_lang = res
         ini_write(filename_ini, 'op', 'lang', op_lang)
         dict_obj = enchant.Dict(op_lang)
-        
+
         # Clear cache when user changes dictionary
         spell_cache.clear()
         global cache_loaded
         cache_loaded = False
-        
+
         # Regenerate cached dictionary for new language
         try:
             create_hunspell_wordlist(op_lang)
         except Exception as e:
             print(f"Spell Checker: Error creating cached dictionary: {e}")
-        
+
         if Command.active:
             do_work_if_name(ed, False)
 
@@ -1165,7 +1165,7 @@ class Command:
         b_open   = ',on_open,'        in ',' + v + ','
         b_focus  = ',on_focus,'       in ',' + v + ','
         b_change = ',on_change_slow,' in ',' + v + ','
-        
+
         # Combine on_open and on_focus into single option for user
         b_check_on_open = b_open and b_focus
 
@@ -1204,7 +1204,7 @@ class Command:
             msg_status(_('Spell Checker dictionary was not inited'))
             return
         check_tokens = need_check_tokens(ed)
-        
+
         # Always use unified cache and start timer
         cache = spell_cache
         start_cache_timer()
@@ -1251,12 +1251,12 @@ class Command:
                 misspelled.add(sub)
 
         app_proc(PROC_PROGRESSBAR, -1)
-        
+
         # Save cache after this operation
         global cache_needs_save
         if cache_needs_save:
             save_persistent_cache(op_lang, cache)
-        
+
         duration = time.time() - start_time
         if escape:
             msg_status(_('Spell-checking stopped'))
