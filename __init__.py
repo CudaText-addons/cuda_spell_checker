@@ -739,7 +739,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
                 count += 1
 
                 if not is_ascii:
-                    # Encode to UTF-16 and count code units
+                    # fix for word after Emoji, wrong attr offset: encode to UTF-16 and count code units
                     utf16_str = line[:x_pos].encode('utf-16-le')
                     x_pos = len(utf16_str) // 2
 
