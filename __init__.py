@@ -740,10 +740,8 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
 
                 if not is_ascii:
                     # Encode to UTF-16 and count code units
-                    sub_str = line[:x_pos]
-                    utf16_str = sub_str.encode('utf-16-le')
+                    utf16_str = line[:x_pos].encode('utf-16-le')
                     x_pos = len(utf16_str) // 2
-                    # print('x before/after:', x_pos, utf16_offset)
 
                 res_x.append(x_pos)
                 res_y.append(nline)
