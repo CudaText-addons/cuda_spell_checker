@@ -652,6 +652,8 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
     if not line:
         return (0, res_x, res_y, res_n)
 
+    is_ascii = line.isascii()
+
     # Pre-check for URLs only if line contains ://
     has_urls = '://' in line
     url_ranges = None
@@ -679,6 +681,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
                 # continue
 
         x_pos = m.start()
+
         if "'" in sub:
             # Strip all leading apostrophes
             while sub and sub[0] == "'":
@@ -734,6 +737,14 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
             else:
                 # known wrong from previous run
                 count += 1
+
+                if not is_ascii:
+                    # Encode to UTF-16 and count code units
+                    sub_str = line[:x_pos]
+                    utf16_str = sub_str.encode('utf-16-le')
+                    x_pos = len(utf16_str) // 2
+                    # print('x before/after:', x_pos, utf16_offset)
+
                 res_x.append(x_pos)
                 res_y.append(nline)
                 res_n.append(len(sub))
