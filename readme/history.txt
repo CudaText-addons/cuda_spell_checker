@@ -1,5 +1,6 @@
-2025.12.11
-- fix: wrong underline positions for misspelled words after Emojis (by Alexey T.)
+2025.12.11 (by Alexey T.)
+- fix: wrong underline positions for misspelled words after Emojis
+- fix: in 'lite' lexer (name ends with '^') plugin must check all the text
 
 2025.11.21 (patches by @badrelmers)
 + add: Implemented "Persistent Smart Cache". Spell check results are now saved to disk (JSON), preserving the cache across CudaText restarts.
