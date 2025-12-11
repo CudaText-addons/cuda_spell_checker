@@ -630,7 +630,7 @@ def is_filetype_ok(fn):
 
 def need_check_tokens(ed):
     lexer = ed.get_prop(PROP_LEXER_FILE)
-    if lexer:
+    if lexer and not lexer.endswith('^'):
         props = lexer_proc(LEXER_GET_PROP, lexer)
         return props['st_c'] != '' or props['st_s'] != ''
     else:
