@@ -758,6 +758,12 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
 
         # --- We found a misspelled word ---
         count += 1
+
+        if not is_ascii:
+            # fix for word after Emoji, wrong attr offset: encode to UTF-16 and count code units
+            utf16_str = line[:x_pos].encode('utf-16-le')
+            x_pos = len(utf16_str) // 2
+
         res_x.append(x_pos)
         res_y.append(nline)
         res_n.append(len(sub))
