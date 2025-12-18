@@ -72,6 +72,10 @@ MARKTAG = 105 #unique int for all marker plugins
 # Track newly opened files that haven't been checked yet
 newly_opened_files = set()
 
+def utf8_to_w(line, x):
+    s = line[:x].encode('utf-16-le')
+    return len(s) // 2
+
 def set_events_safely(events_to_add, lexer_list='', filter_str=''):
     """
     Set events while preserving those from install.inf. because PROC_SET_EVENTS resets all the events including those from install.inf (only events in plugins.ini are preserved).
@@ -454,8 +458,7 @@ def replace_current_word_with_word(ed, word, info):
 
         # support Emoji before word
         line = ed.get_text_line(y)
-        utf16_str = line[:x].encode('utf-16-le')
-        x = len(utf16_str) // 2
+        x = utf8_to_w(line, x)
 
         ed.replace(x, y, x+xlen, y, word)
     return inner
@@ -748,9 +751,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
                 count += 1
 
                 if not is_ascii:
-                    # fix for word after Emoji, wrong attr offset: encode to UTF-16 and count code units
-                    utf16_str = line[:x_pos].encode('utf-16-le')
-                    x_pos = len(utf16_str) // 2
+                    x_pos = utf8_to_w(line, x_pos)
 
                 res_x.append(x_pos)
                 res_y.append(nline)
@@ -769,9 +770,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
         count += 1
 
         if not is_ascii:
-            # fix for word after Emoji, wrong attr offset: encode to UTF-16 and count code units
-            utf16_str = line[:x_pos].encode('utf-16-le')
-            x_pos = len(utf16_str) // 2
+            x_pos = utf8_to_w(line, x_pos)
 
         res_x.append(x_pos)
         res_y.append(nline)
@@ -1030,10 +1029,9 @@ def do_work_word(ed, with_dialog):
     x = info['x']
     y = info['y']
 
-    # support Emoji before x1
+    # support Emoji before word
     line = ed.get_text_line(y)
-    utf16_str = line[:x].encode('utf-16-le')
-    x = len(utf16_str) // 2
+    x = utf8_to_w(line, x)
 
     # Load dictionary into cache if not already loaded
     load_dictionary_into_cache()
