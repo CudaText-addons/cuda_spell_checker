@@ -448,7 +448,16 @@ def get_current_word_under_caret(ed, r_click=False):
 
 def replace_current_word_with_word(ed, word, info):
     def inner():
-        ed.replace(info['n1'], info['y'], info['n2'], info['y'], word)
+        x = info['n1']
+        xlen = info['n2'] - info['n1']
+        y = info['y']
+
+        # support Emoji before word
+        line = ed.get_text_line(y)
+        utf16_str = line[:x].encode('utf-16-le')
+        x = len(utf16_str) // 2
+
+        ed.replace(x, y, x+xlen, y, word)
     return inner
 
 def find_spell_submenu():
@@ -1020,6 +1029,11 @@ def do_work_word(ed, with_dialog):
 
     x = info['x']
     y = info['y']
+
+    # support Emoji before x1
+    line = ed.get_text_line(y)
+    utf16_str = line[:x].encode('utf-16-le')
+    x = len(utf16_str) // 2
 
     # Load dictionary into cache if not already loaded
     load_dictionary_into_cache()
