@@ -1262,7 +1262,7 @@ class Command:
             for i in range(res[0]):
                 x_pos = res[1][i]
                 sub_len = res[3][i]
-                sub = line[x_pos:x_pos + sub_len]
+                sub = ed.get_text_substr(x_pos, nline, x_pos + sub_len, nline)
                 misspelled.add(sub)
 
         app_proc(PROC_PROGRESSBAR, -1)
