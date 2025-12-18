@@ -804,7 +804,7 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
             count += 1
 
             # Get the word
-            sub = line[x_pos:x_pos + word_len]
+            sub = ed.get_text_substr(x_pos, nline, x_pos + word_len, nline)
 
             # Show dialog
             ed.set_caret(x_pos, nline, x_pos + word_len, nline)
