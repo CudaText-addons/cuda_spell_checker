@@ -1,3 +1,6 @@
+2025.12.30 (patches by @badrelmers)
+* change: use new+better API, but now require CudaText 1.231.0+
+
 2025.12.11 (by Alexey T.)
 - fix: wrong underline positions for misspelled words after Emojis
 - fix: in 'lite' lexer (name ends with '^') plugin must check all the text
