@@ -20,7 +20,6 @@ def str_to_bool(s): return s == '1'
 filename_ini = os.path.join(app_path(APP_DIR_SETTINGS), 'cuda_spell_checker.ini')
 filename_plugins = os.path.join(app_path(APP_DIR_SETTINGS), 'plugins.ini')
 _mydir = os.path.dirname(__file__)
-filename_install_inf = os.path.join(_mydir, 'install.inf')
 
 op_underline_color = app_proc(PROC_THEME_UI_DICT_GET, '')['EdMicromapSpell']['color']
 
@@ -30,9 +29,6 @@ op_confirm_esc               = str_to_bool(ini_read(filename_ini, 'op', 'confirm
 op_file_types                =             ini_read(filename_ini, 'op', 'file_extension_list'       , '*'              )
 op_url_regex                 =             ini_read(filename_ini, 'op', 'url_regex'                 , r'\bhttps?://\S+')
 op_cache_lifetime            =         int(ini_read(filename_ini, 'op', 'cache_lifetime'            , '60'             ))  # in minutes, 0=forever
-
-_events_str = ini_read(filename_install_inf, 'item1', 'events', '')
-install_inf_events = {ev.strip() for ev in _events_str.split(',') if ev.strip()}
 
 re_url = re.compile(op_url_regex, 0)
 word_re = re.compile(r"[\w']+")
@@ -75,19 +71,6 @@ newly_opened_files = set()
 def utf8_to_w(line, x):
     s = line[:x].encode('utf-16-le')
     return len(s) // 2
-
-def set_events_safely(events_to_add, lexer_list='', filter_str=''):
-    """
-    Set events while preserving those from install.inf. because PROC_SET_EVENTS resets all the events including those from install.inf (only events in plugins.ini are preserved).
-
-    Args:
-        events_to_add: Set or list of event names to add
-        lexer_list: Comma-separated lexer names (optional)
-        filter_str: Filter parameter for certain events (optional)
-    """
-    all_events = install_inf_events | set(events_to_add)
-    event_list_str = ','.join(all_events)
-    app_proc(PROC_SET_EVENTS, f"cuda_spell_checker;{event_list_str};{lexer_list};{filter_str}")
 
 def get_hunspell_dict_path(lang_code):
     """
@@ -847,49 +830,32 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
 
     return (count, replaced)
 
-
-timer_editors = []
-def timer_check(tag='', info=''):
-    global timer_editors
-    for ed in timer_editors:
-        do_work(ed, False, False)
-    timer_editors = []
-
-def lexer_parsed(ed_self):
-    """Event handler for when lexer finishes parsing.
-    Called after lexer has finished parsing (only if parsing took >=600ms)"""
-    # Unsubscribe from on_lexer_parsed to avoid duplicate checks calls when the user change the lexer
-    set_events_safely([])
-
-    # Perform spell check now that lexer is ready
-    msg_status(_("Spell Checker: Lexer has just finished its parsing. Checking again..."))
-    do_work(ed_self, False, True, False, False)
-
-def do_work(ed, with_dialog, allow_in_sel, allow_timer=False, on_lexer_parsed_subscription=False):
+def do_work(ed, with_dialog, allow_in_sel):
     # work only with remembered editor, until work is finished
     global cache_needs_save
 
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
 
+    # Check if lexer is busy parsing (for non-lite lexers)
+    check_tokens = need_check_tokens(editor)
+    if check_tokens:
+        is_lexer_busy = editor.get_prop(PROP_LEXER_BUSY)
+        if is_lexer_busy:
+            tab_title = editor.get_prop(PROP_TAB_TITLE)
+            msg_box("Spell Checker:\n\n" +
+                _("CudaText is still parsing the file: '%s'.") % tab_title + "\n" +
+                _("This typically occurs with large files.") + "\n\n" +
+                _("Please wait a few seconds and try again."),
+                MB_OK + MB_ICONINFO)
+            return
+
     count_all = 0
     count_replace = 0
     percent = -1
     app_proc(PROC_SET_ESCAPE, False)
-    check_tokens = need_check_tokens(editor)
 
-    if check_tokens and on_lexer_parsed_subscription and not with_dialog:
-        # when we call check() on a big file that uses a lexer we will get wrong results because Cudatext takes some time to parse and set tokens (comments, strings..etc), so we need to subscribe to on_lexer_parsed. but this means that the file may be checked twice, one because we clicked check, and one if on_lexer_parsed fires, we cannot prevent this unless the API removes the 600ms limit
-        # Subscribe to on_lexer_parsed event for files that take longer than 600ms to parse
-        set_events_safely(['on_lexer_parsed'])
-
-    # opening of Markdown file at startup gives not yet parsed file, so check fails
-    if check_tokens and allow_timer:
-        timer_editors.append(editor)
-        timer_proc(TIMER_START_ONE, "module=cuda_spell_checker;func=timer_check;", interval=600) # no need to wait more than 600ms because we subscribe to on_lexer_parsed event which will fire if lexer parsing takes more than 600ms. the file will be checked twice if on_lexer_parsed fires, we can do nothing to prevent this unless the API removes the 600ms limit
-        return
-
-    # Always use unified cache and start/restart the 30-minute cache clear timer
+    # Always use unified cache and start/restart the cache clear timer
     cache = spell_cache
     start_cache_timer()
 
@@ -1008,9 +974,10 @@ def reset_carets(ed, carets):
     for c in carets[1:]:
         ed.set_caret(*c, CARET_ADD)
 
-def do_work_if_name(ed_self, allow_in_sel, allow_timer=False, on_lexer_parsed_subscription=False):
+def do_work_if_name(ed_self, allow_in_sel):
+    """Wrapper function for do_work() that checks file type."""
     if is_filetype_ok(ed_self.get_filename()):
-        do_work(ed_self, False, allow_in_sel, allow_timer, on_lexer_parsed_subscription)
+        do_work(ed_self, False, allow_in_sel)
 
 def do_work_word(ed, with_dialog):
     if dict_obj is None:
@@ -1102,7 +1069,7 @@ class Command:
 
     def check(self):
         Command.active = True
-        do_work(ed, False, True, False, True)
+        do_work(ed, False, True)
 
     def check_suggest(self):
         Command.active = True
@@ -1127,7 +1094,7 @@ class Command:
         if is_focused:
             # File is already focused, check it now
             newly_opened_files.discard(h_ed)
-            do_work_if_name(ed_self, False, True, True)
+            do_work_if_name(ed_self, False)
 
     def on_focus(self, ed_self):
         """Check file only if it's newly opened AND now focused"""
@@ -1136,17 +1103,13 @@ class Command:
         # Only check if this file was just opened (is in newly_opened_files)
         if h_ed in newly_opened_files:
             newly_opened_files.discard(h_ed)  # Remove from set after checking
-            do_work_if_name(ed_self, False, True, True)
+            do_work_if_name(ed_self, False)
 
     def on_change_slow(self, ed_self):
         do_work_if_name(ed_self, False)
 
     def on_click_right(self, ed_self, state):
         context_menu(ed_self, False)
-
-    def on_lexer_parsed(self, ed_self):
-        """Event handler for when lexer finishes parsing"""
-        lexer_parsed(ed_self)
 
     def select_dict(self):
         global op_lang
