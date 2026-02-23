@@ -67,6 +67,7 @@ MARKTAG = 105 #unique int for all marker plugins
 
 # Track newly opened files that haven't been checked yet
 newly_opened_files = set()
+ignored_words = []
 
 def utf8_to_w(line, x):
     s = line[:x].encode('utf-16-le')
@@ -532,24 +533,31 @@ def dlg_create():
     'ex0': True})
 
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
-    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_change', 'cap': _('&Change'), 'x': 0, 'y': 100, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_ignore_all', 'cap': _('&Ignore all'), 'x': 0, 'y': 100, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
 
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
-    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_add', 'cap': _('&Add'), 'x': 0, 'y': 130, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_change', 'cap': _('&Change'), 'x': 0, 'y': 130, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
 
     n = dlg_proc(h, DLG_CTL_ADD, 'button')
-    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_cancel', 'cap': _('Cancel'), 'x': 0, 'y': 190, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_add', 'cap': _('&Add'), 'x': 0, 'y': 160, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
+
+    n = dlg_proc(h, DLG_CTL_ADD, 'button')
+    dlg_proc(h, DLG_CTL_PROP_SET, index=n, prop={'name': 'btn_cancel', 'cap': _('Cancel'), 'x': 0, 'y': 220, 'h': 25, 'p': 'panel3', 'a_r': ('',']')})
 
     return h
 
 def dlg_spell(sub):
     global dialog_visible
+    global ignored_words
     if dialog_visible:
         return
 
     if dict_obj is None:
         msg_status(_('Spell Checker dictionary was not inited'))
         return
+
+    if sub in ignored_words:
+        return ''
 
     rep_list = dict_obj.suggest(sub)
     en_list = bool(rep_list)
@@ -558,9 +566,10 @@ def dlg_spell(sub):
     RES_TEXT        = 3
     RES_WORDLIST    = 5
     RES_BTN_SKIP    = 6
-    RES_BTN_REPLACE = 7
-    RES_BTN_ADD     = 8
-    RES_BTN_CANCEL  = 9
+    RES_BTN_SKIP_ALL = 7
+    RES_BTN_REPLACE = 8
+    RES_BTN_ADD     = 9
+    RES_BTN_CANCEL  = 10
 
     h_dlg = dlg_create()
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='edit1', prop={'val': sub})
@@ -573,6 +582,7 @@ def dlg_spell(sub):
         dlg_proc(h_dlg, DLG_HIDE)
 
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_ignore', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_SKIP)})
+    dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_ignore_all', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_SKIP_ALL)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_change', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_REPLACE)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_add', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_ADD)})
     dlg_proc(h_dlg, DLG_CTL_PROP_SET, name='btn_cancel', prop={'on_change': lambda *args, **kwargs: on_button(RES_BTN_CANCEL)})
@@ -588,7 +598,12 @@ def dlg_spell(sub):
     global dialog_pos
     dialog_pos = (props['x'],props['y'])
 
-    if btn == RES_BTN_SKIP: return ''
+    if btn == RES_BTN_SKIP:
+        return ''
+
+    if btn == RES_BTN_SKIP_ALL:
+        ignored_words.append(sub)
+        return ''
 
     if btn == RES_BTN_ADD:
         dict_obj.add_to_pwl(sub)
@@ -833,6 +848,7 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
 def do_work(ed, with_dialog, allow_in_sel):
     # work only with remembered editor, until work is finished
     global cache_needs_save
+    global ignored_words
 
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
@@ -858,6 +874,7 @@ def do_work(ed, with_dialog, allow_in_sel):
     # Always use unified cache and start/restart the cache clear timer
     cache = spell_cache
     start_cache_timer()
+    ignored_words = []
 
     # Load dictionary into cache if not already loaded
     load_dictionary_into_cache()
