@@ -67,7 +67,6 @@ MARKTAG = 105 #unique int for all marker plugins
 
 # Track newly opened files that haven't been checked yet
 newly_opened_files = set()
-ignored_words = []
 
 def utf8_to_w(line, x):
     s = line[:x].encode('utf-16-le')
@@ -546,9 +545,8 @@ def dlg_create():
 
     return h
 
-def dlg_spell(sub):
+def dlg_spell(sub, ignored_words):
     global dialog_visible
-    global ignored_words
     if dialog_visible:
         return
 
@@ -776,7 +774,7 @@ def do_check_line(ed, nline, line, x_start, x_end, check_tokens, cache):
 
     return (count, res_x, res_y, res_n)
 
-def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
+def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache, ignored_words):
     """
     Find and interactively fix misspelled words in a line (dialog mode).
     Returns (count, replaced) or None if user cancels.
@@ -814,7 +812,7 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
 
             # Show dialog
             ed.set_caret(x_pos, nline, x_pos + word_len, nline)
-            rep = dlg_spell(sub)
+            rep = dlg_spell(sub, ignored_words)
 
             if rep is None:
                 return None  # User cancelled
@@ -848,7 +846,6 @@ def do_check_line_with_dialog(ed, nline, x_start, x_end, check_tokens, cache):
 def do_work(ed, with_dialog, allow_in_sel):
     # work only with remembered editor, until work is finished
     global cache_needs_save
-    global ignored_words
 
     h_ed = ed.get_prop(PROP_HANDLE_SELF)
     editor = Editor(h_ed)
@@ -942,7 +939,7 @@ def do_work(ed, with_dialog, allow_in_sel):
             res_y += res[2]
             res_n += res[3]
         else:
-            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache)
+            res = do_check_line_with_dialog(editor, nline, x_start, x_end, check_tokens, cache, ignored_words)
             if res is None:
                 if count_all > 0:
                     reset_carets(editor, carets)
@@ -1010,6 +1007,7 @@ def do_work_word(ed, with_dialog):
         msg_status(_('Not text-word under caret'))
         return
 
+    ignored_words = []
     x = info['x']
     y = info['y']
 
@@ -1025,7 +1023,7 @@ def do_work_word(ed, with_dialog):
 
     if with_dialog:
         ed.set_caret(x, y, x + len(sub), y)
-        rep = dlg_spell(sub)
+        rep = dlg_spell(sub, ignored_words)
         if rep is None: return
         if rep == 'ADD':
             ed.attr(MARKERS_DELETE_BY_POS, MARKTAG, x, y, len(sub))
