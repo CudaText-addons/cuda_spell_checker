@@ -52,6 +52,14 @@ cache_needs_save = False  # Track if cache needs to be saved to disk, this preve
 # On Windows expand PATH environment variable so that Enchant can find its backend DLLs
 if sys.platform == "win32":
     os.environ["PATH"] += ";" + os.path.join(_mydir, _ench, "data", "bin") + ";" + os.path.join(_mydir, _ench, "data", "lib", "enchant-2")
+elif sys.platform == "darwin":
+    if "PYENCHANT_LIBRARY_PATH" not in os.environ:
+        for _lib_dir in ("/opt/homebrew/opt/enchant/lib",   # Homebrew on Apple Silicon (M1/M2/M3)
+                         "/usr/local/opt/enchant/lib"):     # Homebrew on Intel-Mac
+            _lib = os.path.join(_lib_dir, "libenchant-2.dylib")
+            if os.path.exists(_lib):
+                os.environ["PYENCHANT_LIBRARY_PATH"] = _lib
+                break
 
 sys.path.append(_mydir)
 
