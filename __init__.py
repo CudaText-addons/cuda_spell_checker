@@ -984,7 +984,9 @@ def do_work(ed, with_dialog, allow_in_sel):
             COLOR_NONE, COLOR_NONE, op_underline_color,
             0, 0, 0,
             0, 0, op_underline_style, 0,
-            show_on_map = 1)
+            show_on_map = 1,
+            map_only = 2
+            )
 
     if with_dialog and (count_all > 0):
         reset_carets(editor, carets)
@@ -1057,7 +1059,9 @@ def do_work_word(ed, with_dialog):
           op_underline_color,
           0, 0, 0, 0, 0,
           op_underline_style,
-          show_on_map = 1)
+          show_on_map = 1,
+          map_only = 2
+          )
 
 def get_next_pos(x1, y1, is_next):
     m = ed.attr(MARKERS_GET_DICT)
