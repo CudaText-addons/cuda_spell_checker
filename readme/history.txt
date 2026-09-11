@@ -1,3 +1,7 @@
+2026.09.12
++ add: macOS: better detect path to 'libenchant-2.dylib' if it's installed from Brew
+- fix: regress, plugin did not add reddish marks on _micromap_
+
 2026.02.23 (by Alexey T.)
 + add: spell-dialog now has 'Ignore all' button (ignore specified word until end of the checking)
 
