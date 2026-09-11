@@ -1,5 +1,5 @@
 2026.09.12
-+ add: macOS: better detect path to 'libenchant-2.dylib' if it's installed from Brew
++ add: macOS: better detect path to 'libenchant-2.dylib' if it's installed to /opt/homebrew
 - fix: regress, plugin did not add reddish marks on _micromap_
 
 2026.02.23 (by Alexey T.)
