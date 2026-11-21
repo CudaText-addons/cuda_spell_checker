@@ -1,3 +1,7 @@
+2026.11.21
+- fix: avoid deprecated API: app_idle
+- fix: avoid deprecated API: get_filename
+
 2026.09.12
 + add: macOS: better detect path to 'libenchant-2.dylib' if it's installed to /opt/homebrew
 - fix: regress, plugin did not add reddish marks on _micromap_

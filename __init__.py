@@ -918,7 +918,7 @@ def do_work(ed, with_dialog, allow_in_sel):
 
     msg_status(_('Spell-checking in progress...'), False)
     app_proc(PROC_PROGRESSBAR, 0)
-    app_idle(False)
+    app_proc(PROC_IDLE, False)
 
     for idx in range(total_lines):
         line = lines[idx]
@@ -927,7 +927,7 @@ def do_work(ed, with_dialog, allow_in_sel):
         if percent_new // 10 != percent // 10:  # update every 10% to reduce app_proc calls
             percent = percent_new
             app_proc(PROC_PROGRESSBAR, percent)
-            app_idle(False)
+            app_proc(PROC_IDLE, False)
             if app_proc(PROC_GET_ESCAPE, ''):
                 app_proc(PROC_SET_ESCAPE, False)
                 escape = True
@@ -1000,7 +1000,7 @@ def reset_carets(ed, carets):
 
 def do_work_if_name(ed_self, allow_in_sel):
     """Wrapper function for do_work() that checks file type."""
-    if is_filetype_ok(ed_self.get_filename()):
+    if is_filetype_ok(ed_self.get_prop(PROP_FN, '')):
         do_work(ed_self, False, allow_in_sel)
 
 def do_work_word(ed, with_dialog):
@@ -1241,14 +1241,14 @@ class Command:
 
         msg_status(_('Spell-checking in progress...'))
         app_proc(PROC_PROGRESSBAR, 0)
-        app_idle(False)
+        app_proc(PROC_IDLE, False)
 
         for idx in range(total_lines):
             percent_new = idx * 100 // total_lines
             if percent_new // 10 != percent // 10:  # update every 10% to reduce msg_status calls
                 percent = percent_new
                 app_proc(PROC_PROGRESSBAR, percent)
-                app_idle(False)
+                app_proc(PROC_IDLE, False)
                 if app_proc(PROC_GET_ESCAPE, ''):
                     app_proc(PROC_SET_ESCAPE, False)
                     escape = True
